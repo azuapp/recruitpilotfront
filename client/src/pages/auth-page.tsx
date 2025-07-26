@@ -56,11 +56,19 @@ export default function AuthPage() {
   });
 
   const onLogin = async (data: LoginFormData) => {
-    loginMutation.mutate(data);
+    loginMutation.mutate(data, {
+      onSuccess: () => {
+        setLocation("/");
+      }
+    });
   };
 
   const onRegister = async (data: RegisterFormData) => {
-    registerMutation.mutate(data);
+    registerMutation.mutate(data, {
+      onSuccess: () => {
+        setLocation("/");
+      }
+    });
   };
 
   if (user) {
