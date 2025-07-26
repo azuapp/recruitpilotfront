@@ -132,7 +132,7 @@ export default function Candidates() {
                       <SelectValue placeholder="All Positions" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Positions</SelectItem>
+                      <SelectItem value="all">All Positions</SelectItem>
                       <SelectItem value="frontend-developer">Frontend Developer</SelectItem>
                       <SelectItem value="backend-developer">Backend Developer</SelectItem>
                       <SelectItem value="ui-ux-designer">UI/UX Designer</SelectItem>
@@ -147,7 +147,7 @@ export default function Candidates() {
                       <SelectValue placeholder="All Statuses" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Statuses</SelectItem>
+                      <SelectItem value="all">All Statuses</SelectItem>
                       <SelectItem value="new">New</SelectItem>
                       <SelectItem value="reviewed">Reviewed</SelectItem>
                       <SelectItem value="interview">Interview</SelectItem>

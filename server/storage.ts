@@ -18,7 +18,7 @@ import {
   type CandidateWithRelations,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, like, or } from "drizzle-orm";
+import { eq, desc, and, like, or, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -104,7 +104,26 @@ export class DatabaseStorage implements IStorage {
     limit?: number;
     offset?: number;
   }): Promise<CandidateWithAssessment[]> {
-    let query = db
+    const conditions = [];
+    
+    if (filters?.search) {
+      conditions.push(
+        or(
+          like(candidates.fullName, `%${filters.search}%`),
+          like(candidates.email, `%${filters.search}%`)
+        )
+      );
+    }
+    
+    if (filters?.position) {
+      conditions.push(eq(candidates.position, filters.position));
+    }
+    
+    if (filters?.status) {
+      conditions.push(eq(candidates.status, filters.status));
+    }
+
+    let queryBuilder = db
       .select({
         id: candidates.id,
         fullName: candidates.fullName,
@@ -133,44 +152,25 @@ export class DatabaseStorage implements IStorage {
       .from(candidates)
       .leftJoin(assessments, eq(candidates.id, assessments.candidateId));
 
-    const conditions = [];
-    
-    if (filters?.search) {
-      conditions.push(
-        or(
-          like(candidates.fullName, `%${filters.search}%`),
-          like(candidates.email, `%${filters.search}%`)
-        )
-      );
-    }
-    
-    if (filters?.position) {
-      conditions.push(eq(candidates.position, filters.position));
-    }
-    
-    if (filters?.status) {
-      conditions.push(eq(candidates.status, filters.status));
-    }
-
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      queryBuilder = queryBuilder.where(and(...conditions));
     }
 
-    query = query.orderBy(desc(candidates.appliedAt));
+    queryBuilder = queryBuilder.orderBy(desc(candidates.appliedAt));
 
     if (filters?.limit) {
-      query = query.limit(filters.limit);
+      queryBuilder = queryBuilder.limit(filters.limit);
     }
 
     if (filters?.offset) {
-      query = query.offset(filters.offset);
+      queryBuilder = queryBuilder.offset(filters.offset);
     }
 
-    const results = await query;
+    const results = await queryBuilder;
     
     return results.map(row => ({
       ...row,
-      assessment: row.assessment.id ? row.assessment : undefined,
+      assessment: row.assessment && row.assessment.id ? row.assessment : null,
     })) as CandidateWithAssessment[];
   }
 
@@ -245,8 +245,6 @@ export class DatabaseStorage implements IStorage {
     status?: string;
     date?: Date;
   }): Promise<Interview[]> {
-    let query = db.select().from(interviews);
-
     const conditions = [];
     
     if (filters?.candidateId) {
@@ -257,11 +255,13 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(interviews.status, filters.status));
     }
 
+    let queryBuilder = db.select().from(interviews);
+
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      queryBuilder = queryBuilder.where(and(...conditions));
     }
 
-    return await query.orderBy(desc(interviews.scheduledDate));
+    return await queryBuilder.orderBy(desc(interviews.scheduledDate));
   }
 
   async updateInterview(id: string, updates: Partial<Interview>): Promise<Interview> {
@@ -283,13 +283,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEmails(candidateId?: string): Promise<EmailHistory[]> {
-    let query = db.select().from(emailHistory);
+    let queryBuilder = db.select().from(emailHistory);
 
     if (candidateId) {
-      query = query.where(eq(emailHistory.candidateId, candidateId));
+      queryBuilder = queryBuilder.where(eq(emailHistory.candidateId, candidateId));
     }
 
-    return await query.orderBy(desc(emailHistory.createdAt));
+    return await queryBuilder.orderBy(desc(emailHistory.createdAt));
   }
 
   async updateEmailStatus(id: string, status: string): Promise<EmailHistory> {

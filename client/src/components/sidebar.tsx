@@ -118,10 +118,10 @@ export default function Sidebar() {
               
               return (
                 <Link key={item.name} href={item.href}>
-                  <a
+                  <div
                     onClick={closeMobileMenu}
                     className={cn(
-                      "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors",
+                      "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors cursor-pointer",
                       isActive
                         ? "bg-blue-50 text-primary"
                         : "text-gray-700 hover:bg-gray-100"
@@ -133,7 +133,7 @@ export default function Sidebar() {
                     )}>
                       {item.name}
                     </span>
-                  </a>
+                  </div>
                 </Link>
               );
             })}
