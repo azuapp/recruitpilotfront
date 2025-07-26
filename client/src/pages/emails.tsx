@@ -1,0 +1,194 @@
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { isUnauthorizedError } from "@/lib/authUtils";
+import Sidebar from "@/components/sidebar";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Send } from "lucide-react";
+
+interface EmailHistory {
+  id: string;
+  candidateId: string;
+  subject: string;
+  content: string;
+  emailType: string;
+  status: string;
+  sentAt?: string;
+  createdAt: string;
+}
+
+export default function Emails() {
+  const { toast } = useToast();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Redirect to home if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      toast({
+        title: "Unauthorized",
+        description: "You are logged out. Logging in again...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 500);
+      return;
+    }
+  }, [isAuthenticated, isLoading, toast]);
+
+  const { data: emails, isLoading: emailsLoading } = useQuery<EmailHistory[]>({
+    queryKey: ["/api/emails"],
+    retry: false,
+  });
+
+  const getStatusBadge = (status: string) => {
+    const statusMap = {
+      sent: { label: "Sent", className: "bg-green-100 text-green-800" },
+      delivered: { label: "Delivered", className: "bg-green-100 text-green-800" },
+      pending: { label: "Pending", className: "bg-amber-100 text-amber-800" },
+      failed: { label: "Failed", className: "bg-red-100 text-red-800" },
+    };
+    
+    const config = statusMap[status as keyof typeof statusMap] || statusMap.pending;
+    return (
+      <Badge className={config.className}>
+        {config.label}
+      </Badge>
+    );
+  };
+
+  const getTypeBadge = (type: string) => {
+    const typeMap = {
+      confirmation: { label: "Confirmation", className: "bg-gray-100 text-gray-800" },
+      interview: { label: "Interview", className: "bg-blue-100 text-blue-800" },
+      "follow-up": { label: "Follow-up", className: "bg-amber-100 text-amber-800" },
+      rejection: { label: "Rejection", className: "bg-red-100 text-red-800" },
+      offer: { label: "Offer", className: "bg-green-100 text-green-800" },
+    };
+    
+    const config = typeMap[type as keyof typeof typeMap] || typeMap.confirmation;
+    return (
+      <Badge variant="outline" className={config.className}>
+        {config.label}
+      </Badge>
+    );
+  };
+
+  if (isLoading || !isAuthenticated) {
+    return <div>Loading...</div>;
+  }
+
+  // Mock email data since we don't have real data yet
+  const mockEmails = [
+    {
+      id: "1",
+      candidateName: "Michael Johnson",
+      candidateEmail: "michael.j@email.com",
+      subject: "Interview Confirmation - Frontend Developer",
+      content: "Interview scheduled for December 15, 2024 at 10:00 AM via video call...",
+      type: "interview",
+      status: "delivered",
+      sentAt: "2 hours ago"
+    },
+    {
+      id: "2",
+      candidateName: "Sarah Chen",
+      candidateEmail: "sarah.chen@email.com",
+      subject: "Application Received - UX Designer",
+      content: "Thank you for your application for the UX Designer position. We have received your application and will review it shortly...",
+      type: "confirmation",
+      status: "delivered",
+      sentAt: "4 hours ago"
+    },
+    {
+      id: "3",
+      candidateName: "David Rodriguez",
+      candidateEmail: "d.rodriguez@email.com",
+      subject: "Follow-up Required - Data Scientist",
+      content: "We need additional information regarding your availability for the Data Scientist position...",
+      type: "follow-up",
+      status: "pending",
+      sentAt: "1 day ago"
+    }
+  ];
+
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar />
+      
+      <main className="flex-1 lg:ml-64">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b border-gray-200 p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Email History</h2>
+              <p className="text-gray-600 mt-1">Track all email communications</p>
+            </div>
+            <div className="flex space-x-3">
+              <Button>
+                <Send className="w-4 h-4 mr-2" />
+                Send Email
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        <div className="p-6">
+          {/* Email List */}
+          <Card>
+            <CardContent className="p-0">
+              <div className="divide-y divide-gray-200">
+                {emailsLoading ? (
+                  <div className="p-6 text-center text-gray-500">
+                    Loading emails...
+                  </div>
+                ) : emails?.length === 0 ? (
+                  <div className="p-6 text-center text-gray-500">
+                    No emails sent yet. Email history will appear here once emails are sent to candidates.
+                  </div>
+                ) : (
+                  // Display mock data or real data
+                  (emails?.length ? emails : mockEmails).map((email, index) => (
+                    <div key={email.id || index} className="p-6 hover:bg-gray-50">
+                      <div className="flex items-start space-x-4">
+                        <Avatar className="w-12 h-12">
+                          <AvatarFallback>
+                            {(email.candidateName || "Unknown").split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-medium text-gray-900">
+                              {email.subject}
+                            </h3>
+                            <span className="text-sm text-gray-500">
+                              {email.sentAt}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Sent to: {email.candidateEmail || "candidate@email.com"}
+                          </p>
+                          <p className="text-sm text-gray-500 mt-2 line-clamp-2">
+                            {email.content}
+                          </p>
+                          <div className="flex items-center space-x-4 mt-3">
+                            {getStatusBadge(email.status)}
+                            {getTypeBadge(email.type)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    </div>
+  );
+}
