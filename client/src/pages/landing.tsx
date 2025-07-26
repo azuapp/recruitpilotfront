@@ -18,7 +18,7 @@ export default function Landing() {
                 <p className="text-sm text-gray-500">AI Recruitment</p>
               </div>
             </div>
-            <Button onClick={() => window.location.href = '/api/login'}>
+            <Button onClick={() => window.location.href = '/auth'}>
               Admin Login
             </Button>
           </div>
@@ -47,7 +47,7 @@ export default function Landing() {
               variant="outline" 
               size="lg" 
               className="text-lg px-8 py-4"
-              onClick={() => window.location.href = '/api/login'}
+              onClick={() => window.location.href = '/auth'}
             >
               Admin Dashboard
             </Button>

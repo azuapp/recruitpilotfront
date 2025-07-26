@@ -173,6 +173,11 @@ export function setupAuth(app: Express) {
     })(req, res, next);
   });
 
+  // Redirect GET requests to /api/login to the auth page
+  app.get("/api/login", (req, res) => {
+    res.redirect("/auth");
+  });
+
   app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
       if (err) return next(err);
