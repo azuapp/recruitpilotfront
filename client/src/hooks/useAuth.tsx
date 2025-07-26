@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext } from "react";
 import {
   useQuery,
   useMutation,
@@ -100,10 +100,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  return React.createElement(
-    AuthContext.Provider,
-    {
-      value: {
+  return (
+    <AuthContext.Provider
+      value={{
         user: user ?? null,
         isLoading,
         error,
@@ -111,9 +110,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logoutMutation,
         registerMutation,
         isAuthenticated: !!user,
-      },
-    },
-    children
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
   );
 }
 
