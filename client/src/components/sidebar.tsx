@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
-  Users, 
+  Users as UsersIcon, 
   BarChart3, 
   Bus, 
   FileText, 
@@ -47,6 +47,11 @@ const navigationItems = [
     name: "AI Assessments",
     href: "/assessments",
     icon: Brain,
+  },
+  {
+    name: "User Management",
+    href: "/users",
+    icon: UsersIcon,
   },
 ];
 
