@@ -19,6 +19,17 @@ const translations = {
     emailHistory: "Email History",
     assessments: "Assessments",
     users: "Users",
+    
+    // Users page
+    userManagement: "User Management",
+    manageAdminUsers: "Manage admin users and permissions",
+    addUser: "Add User",
+    searchUsers: "Search users...",
+    adminUsers: "Admin Users",
+    user: "User",
+    role: "Role",
+    lastLogin: "Last Login",
+    created: "Created",
     jobDescriptions: "Job Descriptions",
     
     // Job Descriptions page
@@ -39,7 +50,6 @@ const translations = {
     noJobDescriptions: "No Job Descriptions",
     createJobDescriptionsMessage: "Create job descriptions to enable AI-powered candidate scoring and matching.",
     addFirstJobDescription: "Add Your First Job Description",
-    created: "Created",
     active: "Active",
     inactive: "Inactive",
     
@@ -162,6 +172,17 @@ const translations = {
     emailHistory: "سجل البريد الإلكتروني",
     assessments: "التقييمات",
     users: "المستخدمين",
+    
+    // Users page
+    userManagement: "إدارة المستخدمين",
+    manageAdminUsers: "إدارة المستخدمين الإداريين والصلاحيات",
+    addUser: "إضافة مستخدم",
+    searchUsers: "البحث عن المستخدمين...",
+    adminUsers: "المستخدمين الإداريين",
+    user: "المستخدم",
+    role: "الدور",
+    lastLogin: "آخر تسجيل دخول",
+    created: "تاريخ الإنشاء",
     jobDescriptions: "الوصف الوظيفي",
     
     // Job Descriptions page
@@ -182,7 +203,6 @@ const translations = {
     noJobDescriptions: "لا توجد أوصاف وظيفية",
     createJobDescriptionsMessage: "أنشئ أوصاف وظيفية لتمكين التقييم الذكي ومطابقة المرشحين.",
     addFirstJobDescription: "أضف أول وصف وظيفي",
-    created: "تم الإنشاء",
     active: "نشط",
     inactive: "غير نشط",
     

@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import Sidebar from "@/components/sidebar";
@@ -55,6 +56,7 @@ type EditUserFormData = z.infer<typeof editUserSchema>;
 export default function Users() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -277,14 +279,14 @@ export default function Users() {
         <header className="bg-white shadow-sm border-b border-gray-200 p-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-              <p className="text-gray-600 mt-1">Manage admin users and permissions</p>
+              <h1 className="text-3xl font-bold text-gray-900">{t('userManagement')}</h1>
+              <p className="text-gray-600 mt-1">{t('manageAdminUsers')}</p>
             </div>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
-                  Add User
+                  {t('addUser')}
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -397,7 +399,7 @@ export default function Users() {
               <div className="flex items-center space-x-2">
                 <Search className="w-5 h-5 text-gray-400" />
                 <Input
-                  placeholder="Search users..."
+                  placeholder={t('searchUsers')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="max-w-md"
@@ -409,7 +411,7 @@ export default function Users() {
           {/* Users Table */}
           <Card>
             <CardHeader>
-              <CardTitle>Admin Users ({filteredUsers.length})</CardTitle>
+              <CardTitle>{t('adminUsers')} ({filteredUsers.length})</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
@@ -417,22 +419,22 @@ export default function Users() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        User
+                        {t('user')}
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Role
+                        {t('role')}
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
+                        {t('status')}
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Last Login
+                        {t('lastLogin')}
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Created
+                        {t('created')}
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
+                        {t('actions')}
                       </th>
                     </tr>
                   </thead>
