@@ -449,7 +449,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         scheduledDate: new Date(req.body.scheduledDate).toISOString()
       };
       
-      const validatedData = insertInterviewSchema.omit({ id: true }).parse(processedData);
+      const validatedData = insertInterviewSchema.partial().parse(processedData);
       const interview = await storage.updateInterview(id, validatedData);
       
       res.json(interview);

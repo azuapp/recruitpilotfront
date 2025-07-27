@@ -327,6 +327,11 @@ Recruitment Team`
 
   const handleUpdateInterview = () => {
     if (!editingInterview || !interviewForm.candidateId || !interviewForm.scheduledDate) {
+      console.log('Validation failed:', {
+        editingInterview: !!editingInterview,
+        candidateId: interviewForm.candidateId,
+        scheduledDate: interviewForm.scheduledDate
+      });
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -334,6 +339,11 @@ Recruitment Team`
       });
       return;
     }
+
+    console.log('Updating interview with data:', {
+      ...interviewForm,
+      id: editingInterview.id
+    });
 
     updateInterviewMutation.mutate({
       ...interviewForm,
@@ -519,9 +529,12 @@ Recruitment Team`
 
               {/* Edit Interview Dialog */}
               <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="sm:max-w-md" aria-describedby="edit-interview-description">
                   <DialogHeader>
                     <DialogTitle>Edit Interview</DialogTitle>
+                    <DialogDescription id="edit-interview-description">
+                      Update interview details including candidate, date, time, and type.
+                    </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="relative" ref={dropdownRef}>
