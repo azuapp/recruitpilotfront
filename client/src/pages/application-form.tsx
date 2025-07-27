@@ -121,12 +121,9 @@ export default function ApplicationForm() {
             <CardContent className="p-8">
               <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Application Submitted Successfully!</h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600">
                 Thank you for your application. We'll review your submission and get back to you within 3-5 business days.
               </p>
-              <Button onClick={() => window.location.href = '/'}>
-                Return to Home
-              </Button>
             </CardContent>
           </Card>
         </div>
