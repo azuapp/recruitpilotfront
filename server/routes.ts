@@ -385,8 +385,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/interviews', isAuthenticated, async (req, res) => {
     try {
-      const interviewData = insertInterviewSchema.parse(req.body);
-      const interview = await storage.createInterview(interviewData);
+      // Parse and convert scheduledDate to proper Date object
+      const rawData = req.body;
+      const interviewData = {
+        ...rawData,
+        scheduledDate: new Date(rawData.scheduledDate)
+      };
+      
+      const validatedData = insertInterviewSchema.parse(interviewData);
+      const interview = await storage.createInterview(validatedData);
       
       // Send interview invitation email
       try {

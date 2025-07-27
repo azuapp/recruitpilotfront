@@ -51,7 +51,12 @@ export default function Interviews() {
 
   const scheduleInterviewMutation = useMutation({
     mutationFn: async (data: typeof interviewForm) => {
-      const res = await apiRequest("POST", "/api/interviews", data);
+      // Convert scheduledDate string to Date object
+      const interviewData = {
+        ...data,
+        scheduledDate: new Date(data.scheduledDate).toISOString()
+      };
+      const res = await apiRequest("POST", "/api/interviews", interviewData);
       return await res.json();
     },
     onSuccess: () => {
