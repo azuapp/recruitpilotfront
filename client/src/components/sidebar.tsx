@@ -65,53 +65,15 @@ const getNavigationItems = (t: (key: any) => string) => [
 
 export default function Sidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
   const { t, isRTL } = useLanguage();
   const navigationItems = getNavigationItems(t);
 
-  // Check if device is mobile
-  useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 1024; // lg breakpoint
-      setIsMobile(mobile);
-      // Force close mobile menu if switching to desktop
-      if (!mobile && isMobileMenuOpen) {
-        setIsMobileMenuOpen(false);
-      }
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
-  }, [isMobileMenuOpen]);
-
   // Auto-close mobile menu when route changes
   useEffect(() => {
-    if (isMobile) {
-      setIsMobileMenuOpen(false);
-    }
-  }, [location, isMobile]);
-
-  // Auto-close mobile menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (isMobile && isMobileMenuOpen) {
-        const sidebar = document.querySelector('[data-sidebar="mobile-sidebar"]');
-        const menuButton = document.querySelector('[data-sidebar="mobile-button"]');
-        
-        if (sidebar && !sidebar.contains(event.target as Node) && 
-            menuButton && !menuButton.contains(event.target as Node)) {
-          setIsMobileMenuOpen(false);
-        }
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isMobile, isMobileMenuOpen]);
+    setIsMobileMenuOpen(false);
+  }, [location]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -121,57 +83,8 @@ export default function Sidebar() {
     setIsMobileMenuOpen(false);
   };
 
-  return (
+  const renderSidebarContent = () => (
     <>
-      {/* Mobile Menu Button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <Button
-          data-sidebar="mobile-button"
-          variant="outline"
-          size="sm"
-          onClick={toggleMobileMenu}
-          className={cn(
-            "bg-white shadow-md border-2 border-gray-300 hover:bg-gray-50 transition-all duration-200",
-            isMobileMenuOpen && "bg-gray-50 border-gray-400"
-          )}
-          aria-label="Toggle mobile menu"
-        >
-          {isMobileMenuOpen ? (
-            <X className="h-5 w-5" />
-          ) : (
-            <Menu className="h-5 w-5" />
-          )}
-        </Button>
-      </div>
-
-      {/* Mobile Overlay */}
-      {isMobileMenuOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30 touch-manipulation"
-          onClick={closeMobileMenu}
-          aria-label="Close mobile menu"
-        />
-      )}
-
-      {/* Sidebar */}
-      <nav
-        data-sidebar="mobile-sidebar"
-        className={cn(
-          "transition-all duration-300 ease-in-out bg-white shadow-lg h-screen overflow-y-auto",
-          // Mobile: fixed position with slide animation
-          isMobile ? (
-            cn(
-              "fixed z-40",
-              isMobileMenuOpen 
-                ? "translate-x-0 w-64" 
-                : "-translate-x-full w-64"
-            )
-          ) : (
-            // Desktop: fixed position, always visible
-            "fixed lg:relative translate-x-0 w-64 z-30"
-          )
-        )}
-      >
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
@@ -246,6 +159,53 @@ export default function Sidebar() {
             </Button>
           </div>
         </div>
+      </>
+  );
+
+  return (
+    <>
+      {/* Mobile Menu Button */}
+      <div className="lg:hidden fixed top-4 left-4 z-50">
+        <Button
+          data-sidebar="mobile-button"
+          variant="outline"
+          size="sm"
+          onClick={toggleMobileMenu}
+          className={cn(
+            "bg-white shadow-md border-2 border-gray-300 hover:bg-gray-50 transition-all duration-200",
+            isMobileMenuOpen && "bg-gray-50 border-gray-400"
+          )}
+          aria-label="Toggle mobile menu"
+        >
+          {isMobileMenuOpen ? (
+            <X className="h-5 w-5" />
+          ) : (
+            <Menu className="h-5 w-5" />
+          )}
+        </Button>
+      </div>
+
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={closeMobileMenu}
+        />
+      )}
+
+      {/* Desktop Sidebar - Always visible on large screens */}
+      <nav className="hidden lg:block fixed left-0 top-0 w-64 h-screen bg-white shadow-lg z-30 overflow-y-auto">
+        {renderSidebarContent()}
+      </nav>
+
+      {/* Mobile Sidebar - Slide overlay */}
+      <nav
+        className={cn(
+          "lg:hidden fixed left-0 top-0 w-64 h-screen bg-white shadow-lg z-40 overflow-y-auto transition-transform duration-300 ease-in-out",
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        {renderSidebarContent()}
       </nav>
     </>
   );
