@@ -73,6 +73,14 @@ export interface IStorage {
   createJobDescription(jobDescription: InsertJobDescription): Promise<JobDescription>;
   getJobDescriptions(): Promise<JobDescription[]>;
   getJobDescriptionById(id: string): Promise<JobDescription | undefined>;
+  
+  // Dashboard statistics
+  getDashboardStats(): Promise<{
+    totalCandidates: number;
+    activePositions: number;
+    interviews: number;
+    assessments: number;
+  }>;
   getJobDescriptionByPosition(position: string): Promise<JobDescription | undefined>;
   updateJobDescription(id: string, updates: Partial<JobDescription>): Promise<JobDescription>;
   deleteJobDescription(id: string): Promise<void>;
@@ -457,7 +465,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Statistics
-  async getStats(): Promise<{
+  async getDashboardStats(): Promise<{
     totalCandidates: number;
     activePositions: number;
     interviews: number;

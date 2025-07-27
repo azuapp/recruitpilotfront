@@ -1,11 +1,11 @@
 import OpenAI from "openai";
-import { config } from "../config/environment";
+import env from "../config/environment";
 import { logger } from "./logger";
 import { AppError } from "./errorHandler";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ 
-  apiKey: config.OPENAI_API_KEY
+  apiKey: env.OPENAI_API_KEY
 });
 
 export interface ResumeAnalysis {

@@ -1,4 +1,4 @@
-import { config } from '../config/environment';
+import env from '../config/environment';
 
 export enum LogLevel {
   ERROR = 'ERROR',
@@ -27,7 +27,7 @@ class Logger {
   }
 
   debug(message: string, meta?: any): void {
-    if (config.isDevelopment()) {
+    if (env.NODE_ENV === 'development') {
       console.log(this.formatMessage(LogLevel.DEBUG, message, meta));
     }
   }
