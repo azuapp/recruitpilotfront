@@ -98,7 +98,7 @@ export default function Candidates() {
   }, [isAuthenticated, isLoading, toast]);
 
   const { data: candidates, isLoading: candidatesLoading } = useQuery<CandidateWithAssessment[]>({
-    queryKey: ["/api/candidates", { search, position: positionFilter, status: statusFilter }],
+    queryKey: ["/api/candidates"],
     retry: false,
   });
 
