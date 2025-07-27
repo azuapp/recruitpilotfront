@@ -137,7 +137,7 @@ export default function Candidates() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{t("candidates")}</h2>
-              <p className="text-gray-600 mt-1 text-sm sm:text-base">Manage and review job applications</p>
+              <p className="text-gray-600 mt-1 text-sm sm:text-base">{t("manageReviewApplications")}</p>
             </div>
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
               <Button variant="outline" onClick={exportCandidates} className="w-full sm:w-auto">
