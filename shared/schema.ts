@@ -181,13 +181,6 @@ export const insertInterviewSchema = createInsertSchema(interviews).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-}).extend({
-  scheduledDate: z.union([z.string(), z.date()]).transform((val) => {
-    if (typeof val === 'string') {
-      return new Date(val);
-    }
-    return val;
-  })
 });
 
 export const insertEmailSchema = createInsertSchema(emailHistory).omit({

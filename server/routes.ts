@@ -386,10 +386,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/interviews', isAuthenticated, async (req, res) => {
     try {
       console.log('Raw interview data:', req.body);
+      console.log('Date field type:', typeof req.body.scheduledDate);
+      console.log('Date field value:', req.body.scheduledDate);
       
-      // Let the schema handle date conversion
-      const validatedData = insertInterviewSchema.parse(req.body);
-      console.log('Validated data:', validatedData);
+      // Manual date conversion to ensure proper Date object
+      const processedData = {
+        ...req.body,
+        scheduledDate: new Date(req.body.scheduledDate)
+      };
+      
+      console.log('Processed date:', processedData.scheduledDate);
+      console.log('Is valid date:', !isNaN(processedData.scheduledDate.getTime()));
+      console.log('Date constructor:', processedData.scheduledDate.constructor.name);
+      console.log('Has toISOString:', typeof processedData.scheduledDate.toISOString);
+      
+      // Validate the processed data
+      const validatedData = insertInterviewSchema.parse(processedData);
+      console.log('Validated data scheduledDate type:', typeof validatedData.scheduledDate);
+      console.log('Validated data scheduledDate constructor:', validatedData.scheduledDate.constructor.name);
       
       const interview = await storage.createInterview(validatedData);
       
