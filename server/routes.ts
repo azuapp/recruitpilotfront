@@ -267,6 +267,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Download candidate CV
+  app.get('/api/candidates/:id/download-cv', isAuthenticated, async (req, res) => {
+    try {
+      const candidate = await storage.getCandidateById(req.params.id);
+      if (!candidate) {
+        return res.status(404).json({ message: 'Candidate not found' });
+      }
+
+      if (!candidate.cvFilePath) {
+        return res.status(404).json({ message: 'CV file not found' });
+      }
+
+      const filePath = path.resolve(candidate.cvFilePath);
+      
+      // Check if file exists
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ message: 'CV file not found on server' });
+      }
+
+      // Set appropriate headers for file download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${candidate.cvFileName || 'CV.pdf'}"`);
+      
+      // Stream the file
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+      
+      fileStream.on('error', (error) => {
+        console.error('Error streaming CV file:', error);
+        res.status(500).json({ message: 'Error downloading CV' });
+      });
+
+    } catch (error) {
+      console.error('Error downloading CV:', error);
+      res.status(500).json({ message: 'Failed to download CV' });
+    }
+  });
+
   // Assessments endpoints
   app.get('/api/assessments', isAuthenticated, async (req, res) => {
     try {

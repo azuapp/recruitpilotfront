@@ -5,20 +5,27 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import Sidebar from "@/components/sidebar";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Download, 
   Filter, 
   Eye, 
   Mail,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  User,
+  Phone,
+  Globe,
+  FileText,
+  Calendar
 } from "lucide-react";
 
 interface CandidateWithAssessment {
@@ -28,10 +35,20 @@ interface CandidateWithAssessment {
   phone: string;
   linkedinProfile?: string;
   position: string;
+  cvFileName: string;
+  cvFilePath: string;
   status: string;
   appliedAt: string;
+  updatedAt: string;
   assessment?: {
+    id: string;
     overallScore: string;
+    technicalSkills: string;
+    experienceMatch: string;
+    education: string;
+    aiInsights: string;
+    status: string;
+    processedAt: string;
   };
 }
 
@@ -42,6 +59,9 @@ export default function Candidates() {
   const [search, setSearch] = useState("");
   const [positionFilter, setPositionFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [selectedCandidate, setSelectedCandidate] = useState<CandidateWithAssessment | null>(null);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
 
   const exportCandidates = () => {
     if (!candidates || candidates.length === 0) {
@@ -121,6 +141,86 @@ export default function Candidates() {
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  // Action functions for the three buttons
+  const handleViewDetails = (candidate: CandidateWithAssessment) => {
+    setSelectedCandidate(candidate);
+  };
+
+  const handleDownloadCV = async (candidate: CandidateWithAssessment) => {
+    try {
+      const response = await fetch(`/api/candidates/${candidate.id}/download-cv`);
+      if (!response.ok) {
+        throw new Error('Failed to download CV');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = candidate.cvFileName || 'CV.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Download Successful",
+        description: `Downloaded ${candidate.fullName}'s CV`,
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to download CV",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!selectedCandidate || !emailSubject || !emailMessage) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in both subject and message",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: selectedCandidate.email,
+          subject: emailSubject,
+          message: emailMessage,
+          candidateId: selectedCandidate.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send email');
+      }
+
+      toast({
+        title: "Email Sent",
+        description: `Email sent to ${selectedCandidate.fullName}`,
+      });
+      
+      setEmailSubject("");
+      setEmailMessage("");
+      setSelectedCandidate(null);
+    } catch (error) {
+      toast({
+        title: "Email Failed",
+        description: "Failed to send email",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading || !isAuthenticated) {
@@ -300,15 +400,72 @@ export default function Candidates() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex space-x-2">
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleViewDetails(candidate)}
+                                title="View Details"
+                              >
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleDownloadCV(candidate)}
+                                title="Download CV"
+                              >
                                 <Download className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm">
-                                <Mail className="w-4 h-4" />
-                              </Button>
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    title="Send Email"
+                                    onClick={() => {
+                                      setSelectedCandidate(candidate);
+                                      setEmailSubject(`Regarding your application for ${candidate.position}`);
+                                    }}
+                                  >
+                                    <Mail className="w-4 h-4" />
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-md">
+                                  <DialogHeader>
+                                    <DialogTitle>Send Email to {candidate.fullName}</DialogTitle>
+                                    <DialogDescription>
+                                      Compose an email to the candidate
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <div className="space-y-4">
+                                    <div>
+                                      <Label htmlFor="email-subject">Subject</Label>
+                                      <Input
+                                        id="email-subject"
+                                        value={emailSubject}
+                                        onChange={(e) => setEmailSubject(e.target.value)}
+                                        placeholder="Email subject"
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="email-message">Message</Label>
+                                      <Textarea
+                                        id="email-message"
+                                        value={emailMessage}
+                                        onChange={(e) => setEmailMessage(e.target.value)}
+                                        placeholder="Type your message here..."
+                                        rows={5}
+                                      />
+                                    </div>
+                                    <div className="flex justify-end space-x-2">
+                                      <DialogTrigger asChild>
+                                        <Button variant="outline">Cancel</Button>
+                                      </DialogTrigger>
+                                      <Button onClick={handleSendEmail}>Send Email</Button>
+                                    </div>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
                             </div>
                           </td>
                         </tr>
@@ -341,6 +498,127 @@ export default function Candidates() {
           </Card>
         </div>
       </main>
+
+      {/* View Details Dialog */}
+      {selectedCandidate && (
+        <Dialog open={!!selectedCandidate && !emailSubject} onOpenChange={() => setSelectedCandidate(null)}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <User className="w-5 h-5" />
+                {selectedCandidate.fullName}
+              </DialogTitle>
+              <DialogDescription>
+                Candidate details and assessment information
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Personal Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Personal Information</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm">{selectedCandidate.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm">{selectedCandidate.phone}</span>
+                    </div>
+                    {selectedCandidate.linkedinProfile && (
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-gray-500" />
+                        <a 
+                          href={selectedCandidate.linkedinProfile} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:underline"
+                        >
+                          LinkedIn Profile
+                        </a>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm">{selectedCandidate.cvFileName}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Application Details</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm">Applied: {new Date(selectedCandidate.appliedAt).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">Position: {selectedCandidate.position}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">Status: </span>
+                      {getStatusBadge(selectedCandidate.status)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Assessment Results */}
+              {selectedCandidate.assessment && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Assessment Results</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Card className="p-4">
+                      <CardHeader className="p-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Overall Score</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-0">
+                        <div className="text-2xl font-bold">{selectedCandidate.assessment.overallScore}%</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="p-4">
+                      <CardHeader className="p-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Technical Skills</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-0">
+                        <div className="text-2xl font-bold">{selectedCandidate.assessment.technicalSkills}%</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="p-4">
+                      <CardHeader className="p-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Experience Match</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-0">
+                        <div className="text-2xl font-bold">{selectedCandidate.assessment.experienceMatch}%</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="p-4">
+                      <CardHeader className="p-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Education</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-0">
+                        <div className="text-2xl font-bold">{selectedCandidate.assessment.education}%</div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* AI Insights */}
+                  <div className="space-y-2">
+                    <h4 className="font-medium">AI Insights</h4>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                        {selectedCandidate.assessment.aiInsights}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
