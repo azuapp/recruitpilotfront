@@ -1,32 +1,62 @@
 import fs from 'fs';
+import { logger } from './logger';
+import { AppError } from './errorHandler';
 
-// Import pdf-parse using require to avoid ES module issues
-const createRequire = (await import('module')).createRequire;
-const require = createRequire(import.meta.url);
-const pdf = require('pdf-parse');
+// Use dynamic import for pdf-parse to handle ES module compatibility
+async function getPdfParser() {
+  try {
+    const pdfParse = await import('pdf-parse');
+    return pdfParse.default;
+  } catch (error) {
+    logger.error('Failed to import pdf-parse', { error });
+    throw new AppError('PDF parsing library not available', 500);
+  }
+}
 
 export async function extractTextFromPDF(filePath: string): Promise<string> {
   try {
+    logger.info('Starting PDF text extraction', { filePath });
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      throw new AppError('PDF file not found', 404);
+    }
+    
     // Read the PDF file
     const pdfBuffer = fs.readFileSync(filePath);
+    logger.debug('PDF file read successfully', { fileSize: pdfBuffer.length });
+    
+    // Get PDF parser
+    const pdf = await getPdfParser();
     
     // Extract text using pdf-parse
     const data = await pdf(pdfBuffer);
     
-    // Return the extracted text, cleaned up
+    // Clean up the extracted text
     const extractedText = data.text
       .replace(/\s+/g, ' ') // Replace multiple whitespace with single space
       .replace(/\n\s*\n/g, '\n') // Remove empty lines
       .trim();
     
+    // Validate extracted content
     if (!extractedText || extractedText.length < 50) {
-      throw new Error('PDF appears to be empty or contains no readable text');
+      throw new AppError('PDF appears to be empty or contains no readable text', 400);
     }
+    
+    logger.info('PDF text extraction successful', { 
+      textLength: extractedText.length,
+      wordCount: extractedText.split(/\s+/).length 
+    });
     
     return extractedText;
   } catch (error: any) {
-    console.error('Error extracting text from PDF:', error);
-    throw new Error(`Failed to extract text from PDF: ${error.message || 'Unknown error'}`);
+    logger.error('PDF text extraction failed', { error: error.message, filePath });
+    
+    if (error instanceof AppError) {
+      throw error;
+    }
+    
+    throw new AppError(`Failed to extract text from PDF: ${error.message}`, 500);
   }
 }
 

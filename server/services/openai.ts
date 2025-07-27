@@ -1,8 +1,11 @@
 import OpenAI from "openai";
+import { config } from "../config/environment";
+import { logger } from "./logger";
+import { AppError } from "./errorHandler";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key"
+  apiKey: config.OPENAI_API_KEY
 });
 
 export interface ResumeAnalysis {
@@ -18,6 +21,12 @@ export async function analyzeResume(
   position: string
 ): Promise<ResumeAnalysis> {
   try {
+    logger.info('Starting AI resume analysis', { position, textLength: resumeText.length });
+    
+    if (!resumeText || resumeText.length < 50) {
+      throw new AppError('Resume text is too short for analysis', 400);
+    }
+
     const prompt = `
     Analyze this resume for the position of "${position}". 
     Provide a detailed assessment in JSON format with the following structure:
@@ -59,6 +68,11 @@ export async function analyzeResume(
     });
 
     const analysis = JSON.parse(response.choices[0].message.content || "{}");
+    
+    logger.info('AI analysis completed', { 
+      overallScore: analysis.overallScore,
+      position 
+    });
 
     return {
       overallScore: Math.max(0, Math.min(100, analysis.overallScore || 0)),
@@ -68,13 +82,14 @@ export async function analyzeResume(
       insights: analysis.insights || [],
     };
   } catch (error) {
-    console.error("Error analyzing resume:", error);
-    throw new Error("Failed to analyze resume: " + (error as Error).message);
+    logger.error("AI resume analysis failed", { error: error instanceof Error ? error.message : 'Unknown error' });
+    
+    if (error instanceof AppError) {
+      throw error;
+    }
+    
+    throw new AppError("Failed to analyze resume: " + (error as Error).message, 500);
   }
 }
 
-export async function extractResumeText(resumeContent: string): Promise<string> {
-  // This would typically involve parsing PDF content
-  // For now, we'll assume the resume content is already extracted text
-  return resumeContent;
-}
+// Remove unused function - text extraction is handled by pdfExtractor service

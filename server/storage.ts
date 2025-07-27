@@ -239,6 +239,7 @@ export class DatabaseStorage implements IStorage {
       assessments: candidateAssessments,
       interviews: candidateInterviews,
       emails: candidateEmails,
+      jobFitScores: [], // Add missing field for type compatibility
     };
   }
 
