@@ -39,10 +39,14 @@ export default function Emails() {
     content: "",
     emailType: "follow-up"
   });
+  const [candidateSearch, setCandidateSearch] = useState("");
+  const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
+  const [showCandidateDropdown, setShowCandidateDropdown] = useState(false);
 
+  // Send email mutation 
   const sendEmailMutation = useMutation({
-    mutationFn: async (data: typeof emailForm) => {
-      const res = await apiRequest("POST", "/api/emails/send", data);
+    mutationFn: async (emailData: { to: string; subject: string; body: string }) => {
+      const res = await apiRequest("POST", "/api/send-email", emailData);
       return await res.json();
     },
     onSuccess: () => {
@@ -54,30 +58,40 @@ export default function Emails() {
         content: "",
         emailType: "follow-up"
       });
+      setSelectedCandidate(null);
+      setCandidateSearch("");
+      setShowCandidateDropdown(false);
       toast({
-        title: t("sendEmail"),
-        description: "Email sent successfully",
+        title: "Email Sent",
+        description: `Email sent successfully!`,
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Email Failed",
+        description: "Failed to send email. Please try again.",
         variant: "destructive",
       });
     },
   });
 
   const handleSendEmail = () => {
-    if (!emailForm.candidateId || !emailForm.subject || !emailForm.content) {
+    if (!selectedCandidate || !emailForm.subject || !emailForm.content) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields",
+        description: "Please select a candidate and fill in all required fields",
         variant: "destructive",
       });
       return;
     }
-    sendEmailMutation.mutate(emailForm);
+
+    const emailData = {
+      to: selectedCandidate.email,
+      subject: emailForm.subject,
+      body: emailForm.content
+    };
+
+    sendEmailMutation.mutate(emailData);
   };
 
   // Redirect to home if not authenticated
@@ -99,6 +113,19 @@ export default function Emails() {
     queryKey: ["/api/emails"],
     retry: false,
   });
+
+  // Fetch candidates for the searchable dropdown
+  const { data: candidates } = useQuery<any[]>({
+    queryKey: ["/api/candidates"],
+    retry: false,
+  });
+
+  // Filter candidates based on search
+  const filteredCandidates = candidates?.filter(candidate =>
+    candidate.fullName.toLowerCase().includes(candidateSearch.toLowerCase()) ||
+    candidate.email.toLowerCase().includes(candidateSearch.toLowerCase()) ||
+    candidate.position.toLowerCase().includes(candidateSearch.toLowerCase())
+  ) || [];
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
@@ -197,12 +224,39 @@ export default function Emails() {
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <Label>Candidate ID</Label>
-                      <Input
-                        value={emailForm.candidateId}
-                        onChange={(e) => setEmailForm(prev => ({ ...prev, candidateId: e.target.value }))}
-                        placeholder="Enter candidate ID"
-                      />
+                      <Label>Select Candidate</Label>
+                      <div className="relative">
+                        <Input
+                          value={selectedCandidate ? `${selectedCandidate.fullName} (${selectedCandidate.email})` : candidateSearch}
+                          onChange={(e) => {
+                            setCandidateSearch(e.target.value);
+                            setSelectedCandidate(null);
+                            setShowCandidateDropdown(true);
+                          }}
+                          onFocus={() => setShowCandidateDropdown(true)}
+                          placeholder="Search candidates by name, email, or position..."
+                          className="w-full"
+                        />
+                        {showCandidateDropdown && filteredCandidates.length > 0 && (
+                          <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto mt-1">
+                            {filteredCandidates.slice(0, 10).map((candidate) => (
+                              <div
+                                key={candidate.id}
+                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
+                                onClick={() => {
+                                  setSelectedCandidate(candidate);
+                                  setCandidateSearch("");
+                                  setShowCandidateDropdown(false);
+                                }}
+                              >
+                                <div className="font-medium text-gray-900">{candidate.fullName}</div>
+                                <div className="text-sm text-gray-600">{candidate.email}</div>
+                                <div className="text-xs text-gray-500">{candidate.position}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <Label>{t("emailSubject")}</Label>
