@@ -86,12 +86,13 @@ export default function Sidebar() {
           variant="outline"
           size="sm"
           onClick={toggleMobileMenu}
-          className="bg-white shadow-md"
+          className="bg-white shadow-md border-2 border-gray-300 hover:bg-gray-50"
+          aria-label="Toggle mobile menu"
         >
           {isMobileMenuOpen ? (
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           ) : (
-            <Menu className="h-4 w-4" />
+            <Menu className="h-5 w-5" />
           )}
         </Button>
       </div>
@@ -99,15 +100,16 @@ export default function Sidebar() {
       {/* Mobile Overlay */}
       {isMobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30 touch-manipulation"
           onClick={closeMobileMenu}
+          aria-label="Close mobile menu"
         />
       )}
 
       {/* Sidebar */}
       <nav
         className={cn(
-          "fixed lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out w-64 bg-white shadow-lg z-30 h-screen overflow-y-auto",
+          "fixed lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out w-64 bg-white shadow-lg z-40 h-screen overflow-y-auto",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
@@ -128,30 +130,29 @@ export default function Sidebar() {
         </div>
 
         {/* Navigation Items */}
-        <div className="p-4">
-          <div className="space-y-2">
+        <div className="p-4 pb-20">
+          <div className="space-y-1">
             {navigationItems.map((item) => {
               const isActive = location === item.href;
               const Icon = item.icon;
               
               return (
-                <Link key={item.name} href={item.href}>
-                  <div
-                    onClick={closeMobileMenu}
-                    className={cn(
-                      "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors cursor-pointer",
-                      isActive
-                        ? "bg-blue-50 text-primary"
-                        : "text-gray-700 hover:bg-gray-100"
-                    )}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className={cn(
-                      isActive ? "font-medium" : ""
-                    )}>
-                      {item.name}
-                    </span>
-                  </div>
+                <Link 
+                  key={item.name} 
+                  href={item.href}
+                  className={cn(
+                    "flex items-center space-x-3 px-4 py-4 rounded-lg transition-all duration-200 cursor-pointer block touch-manipulation",
+                    "min-h-[48px] text-base lg:text-sm", // Improved touch targets for mobile
+                    isActive
+                      ? "bg-blue-50 text-primary font-medium shadow-sm"
+                      : "text-gray-700 hover:bg-gray-100 active:bg-gray-200"
+                  )}
+                  onClick={closeMobileMenu}
+                >
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <span className="truncate">
+                    {item.name}
+                  </span>
                 </Link>
               );
             })}
