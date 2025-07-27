@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -44,6 +44,10 @@ export default function Interviews() {
     interviewType: "video",
     notes: ""
   });
+  const [candidateSearch, setCandidateSearch] = useState("");
+  const [showCandidateDropdown, setShowCandidateDropdown] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const scheduleInterviewMutation = useMutation({
     mutationFn: async (data: typeof interviewForm) => {
@@ -59,6 +63,8 @@ export default function Interviews() {
         interviewType: "video",
         notes: ""
       });
+      setSelectedCandidate(null);
+      setCandidateSearch("");
       toast({
         title: t("scheduleInterview"),
         description: "Interview scheduled successfully",
@@ -74,16 +80,30 @@ export default function Interviews() {
   });
 
   const handleScheduleInterview = () => {
-    if (!interviewForm.candidateId || !interviewForm.scheduledDate) {
+    if (!selectedCandidate || !interviewForm.scheduledDate) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields",
+        description: "Please select a candidate and interview date",
         variant: "destructive",
       });
       return;
     }
     scheduleInterviewMutation.mutate(interviewForm);
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowCandidateDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -104,6 +124,18 @@ export default function Interviews() {
     queryKey: ["/api/interviews"],
     retry: false,
   });
+
+  // Fetch candidates for the searchable dropdown
+  const { data: candidates } = useQuery<any[]>({
+    queryKey: ["/api/candidates"],
+    retry: false,
+  });
+
+  // Filter candidates based on search
+  const filteredCandidates = candidates?.filter(candidate =>
+    candidate.fullName.toLowerCase().includes(candidateSearch.toLowerCase()) ||
+    candidate.email.toLowerCase().includes(candidateSearch.toLowerCase())
+  ) || [];
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
@@ -184,13 +216,77 @@ export default function Interviews() {
                     <DialogTitle>{t("scheduleInterview")}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
-                    <div>
-                      <Label>Candidate ID</Label>
+                    <div className="relative" ref={dropdownRef}>
+                      <Label>Candidate</Label>
                       <Input
-                        value={interviewForm.candidateId}
-                        onChange={(e) => setInterviewForm(prev => ({ ...prev, candidateId: e.target.value }))}
-                        placeholder="Enter candidate ID"
+                        value={candidateSearch}
+                        onChange={(e) => {
+                          setCandidateSearch(e.target.value);
+                          setShowCandidateDropdown(true);
+                        }}
+                        onFocus={() => setShowCandidateDropdown(true)}
+                        placeholder="Search candidates by name or email..."
+                        className="mt-2"
                       />
+                      {selectedCandidate && (
+                        <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Avatar className="w-6 h-6">
+                              <AvatarFallback className="text-xs">
+                                {selectedCandidate.fullName.split(' ').map((n: string) => n[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm font-medium">{selectedCandidate.fullName}</span>
+                            <span className="text-xs text-gray-500">({selectedCandidate.email})</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedCandidate(null);
+                              setCandidateSearch("");
+                              setInterviewForm(prev => ({ ...prev, candidateId: "" }));
+                            }}
+                            className="h-6 w-6 p-0"
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      )}
+                      {showCandidateDropdown && candidateSearch && filteredCandidates.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                          {filteredCandidates.slice(0, 10).map((candidate) => (
+                            <div
+                              key={candidate.id}
+                              className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                              onClick={() => {
+                                setSelectedCandidate(candidate);
+                                setCandidateSearch(candidate.fullName);
+                                setShowCandidateDropdown(false);
+                                setInterviewForm(prev => ({ ...prev, candidateId: candidate.id }));
+                              }}
+                            >
+                              <div className="flex items-center space-x-3">
+                                <Avatar className="w-8 h-8">
+                                  <AvatarFallback>
+                                    {candidate.fullName.split(' ').map((n: string) => n[0]).join('')}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">{candidate.fullName}</div>
+                                  <div className="text-xs text-gray-500">{candidate.email}</div>
+                                  <div className="text-xs text-blue-600">{candidate.position.replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {showCandidateDropdown && candidateSearch && filteredCandidates.length === 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg p-3">
+                          <div className="text-sm text-gray-500 text-center">No candidates found</div>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <Label>{t("interviewDate")}</Label>
