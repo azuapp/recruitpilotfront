@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -65,10 +65,48 @@ const getNavigationItems = (t: (key: any) => string) => [
 
 export default function Sidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
   const { t, isRTL } = useLanguage();
   const navigationItems = getNavigationItems(t);
+
+  // Check if device is mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024); // lg breakpoint
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Auto-close mobile menu when route changes
+  useEffect(() => {
+    if (isMobile) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [location, isMobile]);
+
+  // Auto-close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMobile && isMobileMenuOpen) {
+        const sidebar = document.querySelector('[data-sidebar="mobile-sidebar"]');
+        const menuButton = document.querySelector('[data-sidebar="mobile-button"]');
+        
+        if (sidebar && !sidebar.contains(event.target as Node) && 
+            menuButton && !menuButton.contains(event.target as Node)) {
+          setIsMobileMenuOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMobile, isMobileMenuOpen]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -83,10 +121,14 @@ export default function Sidebar() {
       {/* Mobile Menu Button */}
       <div className="lg:hidden fixed top-4 left-4 z-50">
         <Button
+          data-sidebar="mobile-button"
           variant="outline"
           size="sm"
           onClick={toggleMobileMenu}
-          className="bg-white shadow-md border-2 border-gray-300 hover:bg-gray-50"
+          className={cn(
+            "bg-white shadow-md border-2 border-gray-300 hover:bg-gray-50 transition-all duration-200",
+            isMobileMenuOpen && "bg-gray-50 border-gray-400"
+          )}
           aria-label="Toggle mobile menu"
         >
           {isMobileMenuOpen ? (
@@ -108,9 +150,18 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <nav
+        data-sidebar="mobile-sidebar"
         className={cn(
-          "fixed lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out w-64 bg-white shadow-lg z-40 h-screen overflow-y-auto",
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          "fixed lg:relative transition-all duration-300 ease-in-out bg-white shadow-lg z-40 h-screen overflow-y-auto",
+          // Mobile: slide in/out + collapse
+          isMobile ? (
+            isMobileMenuOpen 
+              ? "translate-x-0 w-64" 
+              : "-translate-x-full w-0"
+          ) : (
+            // Desktop: always visible, full width
+            "translate-x-0 w-64"
+          )
         )}
       >
         {/* Header */}
