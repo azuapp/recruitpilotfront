@@ -22,17 +22,17 @@ function Router() {
 
   return (
     <Switch>
+      {/* Public routes - always available */}
+      <Route path="/apply" component={ApplicationForm} />
+      <Route path="/auth" component={AuthPage} />
+      
+      {/* Conditional routes based on authentication */}
       {isLoading || !isAuthenticated ? (
-        <>
-          <Route path="/" component={Landing} />
-          <Route path="/apply" component={ApplicationForm} />
-          <Route path="/auth" component={AuthPage} />
-        </>
+        <Route path="/" component={Landing} />
       ) : (
         <>
           <Route path="/" component={Home} />
           <Route path="/candidates" component={Candidates} />
-          <Route path="/apply" component={ApplicationForm} />
           <Route path="/interviews" component={Interviews} />
           <Route path="/emails" component={Emails} />
           <Route path="/assessments" component={Assessments} />
