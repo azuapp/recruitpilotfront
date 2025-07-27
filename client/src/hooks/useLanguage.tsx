@@ -98,7 +98,6 @@ const translations = {
     totalAssessments: "Total Assessments",
     averageScore: "Average Score",
     processing: "Processing",
-    assessmentResults: "Assessment Results",
     
     // Candidates
     exportCandidates: "Export Candidates",
@@ -123,6 +122,12 @@ const translations = {
     emailContent: "Email Content",
     emailType: "Email Type",
     emailStatus: "Email Status",
+    
+    // Candidate details dialog
+    personalInformation: "Personal Information",
+    applicationDetails: "Application Details",
+    assessmentResults: "Assessment Results",
+    aiInsights: "AI Insights",
     sentAt: "Sent At",
     
     // Status values
@@ -251,7 +256,6 @@ const translations = {
     totalAssessments: "إجمالي التقييمات",
     averageScore: "متوسط النتيجة",
     processing: "قيد المعالجة",
-    assessmentResults: "نتائج التقييم",
     
     // Candidates
     exportCandidates: "تصدير المرشحين",
@@ -277,6 +281,12 @@ const translations = {
     emailType: "نوع البريد الإلكتروني",
     emailStatus: "حالة البريد الإلكتروني",
     sentAt: "تاريخ الإرسال",
+    
+    // Candidate details dialog
+    personalInformation: "المعلومات الشخصية",
+    applicationDetails: "تفاصيل التطبيق",
+    assessmentResults: "نتائج التقييم",
+    aiInsights: "رؤى الذكاء الاصطناعي",
     
     // Status values
     new: "جديد",

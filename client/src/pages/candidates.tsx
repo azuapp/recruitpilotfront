@@ -517,7 +517,7 @@ export default function Candidates() {
               {/* Personal Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-3">
-                  <h3 className="font-semibold text-lg">Personal Information</h3>
+                  <h3 className="font-semibold text-lg">{t("personalInformation")}</h3>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4 text-gray-500" />
@@ -548,7 +548,7 @@ export default function Candidates() {
                 </div>
 
                 <div className="space-y-3">
-                  <h3 className="font-semibold text-lg">Application Details</h3>
+                  <h3 className="font-semibold text-lg">{t("applicationDetails")}</h3>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-gray-500" />
@@ -568,7 +568,7 @@ export default function Candidates() {
               {/* Assessment Results */}
               {selectedCandidate.assessment && (
                 <div className="space-y-3">
-                  <h3 className="font-semibold text-lg">Assessment Results</h3>
+                  <h3 className="font-semibold text-lg">{t("assessmentResults")}</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <Card className="p-4">
                       <CardHeader className="p-0 pb-2">
@@ -606,7 +606,7 @@ export default function Candidates() {
 
                   {/* AI Insights */}
                   <div className="space-y-2">
-                    <h4 className="font-medium">AI Insights</h4>
+                    <h4 className="font-medium">{t("aiInsights")}</h4>
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <p className="text-sm text-gray-700 whitespace-pre-wrap">
                         {selectedCandidate.assessment.aiInsights}
