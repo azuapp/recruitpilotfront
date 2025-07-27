@@ -27,6 +27,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(assessments);
   }));
 
+  app.post('/api/assessments/bulk', asyncHandler(async (req, res) => {
+    const { runAssessment } = await import('../services/assessmentService');
+    
+    // Get all candidates without assessments or with failed assessments
+    const candidates = await storage.getCandidates();
+    const existingAssessments = await storage.getAssessments();
+    
+    const candidatesNeedingAssessment = candidates.filter(candidate => {
+      const hasValidAssessment = existingAssessments.some(assessment => 
+        assessment.candidateId === candidate.id && 
+        assessment.status === 'completed'
+      );
+      return !hasValidAssessment && candidate.resumeSummary; // Only assess candidates with resume content
+    });
+
+    if (candidatesNeedingAssessment.length === 0) {
+      return res.json({ 
+        message: 'No candidates require assessment',
+        processed: 0,
+        total: 0
+      });
+    }
+
+    let processed = 0;
+    const results = [];
+
+    // Process assessments in batches to avoid overwhelming OpenAI API
+    for (const candidate of candidatesNeedingAssessment) {
+      try {
+        const assessment = await runAssessment(candidate.id, candidate.resumeSummary);
+        results.push(assessment);
+        processed++;
+        logger.info('Bulk assessment completed for candidate', { candidateId: candidate.id });
+      } catch (error) {
+        logger.error('Bulk assessment failed for candidate', { 
+          candidateId: candidate.id, 
+          error: error instanceof Error ? error.message : 'Unknown error' 
+        });
+        // Continue with next candidate even if one fails
+      }
+    }
+
+    res.json({
+      message: `Bulk assessment completed. Processed ${processed} out of ${candidatesNeedingAssessment.length} candidates.`,
+      processed,
+      total: candidatesNeedingAssessment.length,
+      results
+    });
+  }));
+
   // Interviews endpoints
   app.get('/api/interviews', asyncHandler(async (req, res) => {
     const interviews = await storage.getInterviews();

@@ -1,9 +1,10 @@
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import Sidebar from "@/components/sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,40 @@ export default function Assessments() {
   const { data: assessments, isLoading: assessmentsLoading } = useQuery<Assessment[]>({
     queryKey: ["/api/assessments"],
     retry: false,
+  });
+
+  // Bulk assessment mutation
+  const bulkAssessmentMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/assessments/bulk');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Bulk Assessment Completed",
+        description: data.message,
+      });
+      // Refresh assessments data
+      queryClient.invalidateQueries({ queryKey: ["/api/assessments"] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Assessment Failed",
+        description: error.message || "Failed to run bulk assessment",
+        variant: "destructive",
+      });
+    },
   });
 
   if (isLoading || !isAuthenticated) {
@@ -109,9 +144,12 @@ export default function Assessments() {
               <p className="text-gray-600 mt-1 text-sm sm:text-base">{t("aiPoweredResumeAnalysis")}</p>
             </div>
             <div className="flex space-x-3">
-              <Button>
+              <Button 
+                onClick={() => bulkAssessmentMutation.mutate()}
+                disabled={bulkAssessmentMutation.isPending}
+              >
                 <Brain className="w-4 h-4 mr-2" />
-                Run Bulk Assessment
+                {bulkAssessmentMutation.isPending ? "Running..." : "Run Bulk Assessment"}
               </Button>
             </div>
           </div>
