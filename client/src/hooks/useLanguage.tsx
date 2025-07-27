@@ -113,6 +113,7 @@ const translations = {
     
     // Interviews
     scheduleManageInterviews: "Schedule and manage candidate interviews",
+    allInterviews: "All Interviews",
     interviewDate: "Interview Date",
     interviewType: "Interview Type",
     interviewStatus: "Interview Status",
@@ -272,6 +273,7 @@ const translations = {
     
     // Interviews
     scheduleManageInterviews: "جدولة وإدارة مقابلات المرشحين",
+    allInterviews: "جميع المقابلات",
     interviewDate: "تاريخ المقابلة",
     interviewType: "نوع المقابلة",
     interviewStatus: "حالة المقابلة",

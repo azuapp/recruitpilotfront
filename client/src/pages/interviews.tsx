@@ -800,7 +800,7 @@ export default function Interviews() {
           {/* Interview List */}
           <Card className="mt-6">
             <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">All Interviews</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">{t("allInterviews")}</h3>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">
