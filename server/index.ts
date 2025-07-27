@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes/index";
 import { setupVite, serveStatic, log } from "./vite";
-import { config } from "./config/environment";
+import config from "./config/environment";
 import { logger } from "./services/logger";
 
 const app = express();

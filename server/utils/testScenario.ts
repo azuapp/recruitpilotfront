@@ -30,7 +30,7 @@ export async function runProductionTestScenario() {
     // Step 2: Create job description
     logger.info('Creating job description');
     const jobDescription = await storage.createJobDescription({
-      title: 'Senior Full-Stack Developer',
+
       position: 'Software Engineer',
       description: `We are seeking a Senior Full-Stack Developer to join our innovative team. The ideal candidate will have strong experience in modern web technologies, cloud platforms, and agile development methodologies.
 
@@ -178,18 +178,15 @@ Task Management API (Open Source)
     logger.info('Scheduling interview');
     const interview = await storage.createInterview({
       candidateId: candidate.id,
-      scheduledDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
-      type: 'video',
-      duration: 60,
-      interviewerName: 'Michael Rodriguez',
-      location: 'Zoom Meeting Room',
+      scheduledDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
+      interviewType: 'video',
       notes: 'Technical interview focusing on React, Node.js, and system design. Candidate shows strong potential based on AI assessment.',
       status: 'scheduled',
     });
     logger.info('✅ Interview scheduled', { 
       interviewId: interview.id,
       scheduledDate: interview.scheduledDate,
-      type: interview.type
+      type: interview.interviewType
     });
 
     // Step 7: Generate comprehensive report
@@ -210,7 +207,6 @@ Task Management API (Open Source)
         admin: { id: admin.id, email: admin.email },
         jobDescription: { 
           id: jobDescription.id, 
-          title: jobDescription.title,
           position: jobDescription.position
         },
         candidate: { 
@@ -231,7 +227,7 @@ Task Management API (Open Source)
         },
         interview: { 
           id: interview.id, 
-          type: interview.type,
+          type: interview.interviewType,
           status: interview.status,
           scheduledDate: interview.scheduledDate
         }
@@ -323,6 +319,6 @@ export async function validateSystemHealth() {
 
   } catch (error) {
     logger.error('❌ System Health Check Failed', { error });
-    return { status: 'unhealthy', checks: healthChecks, error: error.message };
+    return { status: 'unhealthy', checks: healthChecks, error: (error as Error).message };
   }
 }

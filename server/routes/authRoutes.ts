@@ -11,7 +11,7 @@ router.get('/user', asyncHandler(async (req, res) => {
     throw new AppError('Unauthorized', 401);
   }
   
-  const user = await storage.getUserById(req.user!.id);
+  const user = await storage.getUser(req.user!.id);
   if (!user) {
     throw new AppError('User not found', 404);
   }

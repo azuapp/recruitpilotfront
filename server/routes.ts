@@ -464,7 +464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: 'Invalid interview data', errors: error.errors });
       } else {
-        return res.status(500).json({ message: 'Failed to update interview', error: error.message });
+        return res.status(500).json({ message: 'Failed to update interview', error: (error as Error).message });
       }
     }
   });

@@ -365,7 +365,7 @@ export default function Emails() {
                           </div>
                           <div className="flex items-center space-x-3">
                             {getStatusBadge(email.status)}
-                            {getTypeBadge((email as any).type || email.emailType)}
+                            {getTypeBadge((email as any).type || (email as any).emailType)}
                             <Button
                               variant="outline"
                               size="sm"
@@ -397,7 +397,7 @@ export default function Emails() {
                             <div>
                               <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email Type</label>
                               <p className="text-sm font-medium text-gray-900 mt-1">
-                                {((email as any).type || email.emailType)?.charAt(0).toUpperCase() + ((email as any).type || email.emailType)?.slice(1) || "General"}
+                                {((email as any).type || (email as any).emailType)?.charAt(0).toUpperCase() + ((email as any).type || (email as any).emailType)?.slice(1) || "General"}
                               </p>
                             </div>
                           </div>
@@ -421,9 +421,9 @@ export default function Emails() {
                               <span className="text-xs text-gray-500">
                                 Email ID: {emailId}
                               </span>
-                              {email.candidateId && (
+                              {(email as any).candidateId && (
                                 <span className="text-xs text-gray-500">
-                                  Candidate ID: {email.candidateId}
+                                  Candidate ID: {(email as any).candidateId}
                                 </span>
                               )}
                             </div>

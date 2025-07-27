@@ -92,13 +92,16 @@ export interface IStorage {
   getCandidatesWithFitScores(jobDescriptionId?: string): Promise<CandidateWithFitScore[]>;
   updateJobFitScore(id: string, updates: Partial<JobFitScore>): Promise<JobFitScore>;
   
-  // Statistics
+  // Statistics  
   getStats(): Promise<{
     totalCandidates: number;
     activePositions: number;
     interviews: number;
     assessments: number;
   }>;
+
+  // Replit Auth operations (required)
+  upsertUser(userData: any): Promise<User>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -486,6 +489,41 @@ export class DatabaseStorage implements IStorage {
       interviews: Number(interviewCount.count) || 0,
       assessments: Number(assessmentCount.count) || 0,
     };
+  }
+
+  async getStats(): Promise<{
+    totalCandidates: number;
+    activePositions: number;
+    interviews: number;
+    assessments: number;
+  }> {
+    return this.getDashboardStats();
+  }
+
+  // Replit Auth operations (required)
+  async upsertUser(userData: any): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        id: userData.id,
+        email: userData.email,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        password: '', // Not used in Replit Auth
+        profileImageUrl: userData.profileImageUrl,
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          email: userData.email,
+          firstName: userData.firstName || '',
+          lastName: userData.lastName || '',
+          profileImageUrl: userData.profileImageUrl,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
   }
 }
 
