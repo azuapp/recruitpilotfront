@@ -53,6 +53,10 @@ export default function Interviews() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
+  
+  // Edit interview state
+  const [editingInterview, setEditingInterview] = useState<Interview | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const scheduleInterviewMutation = useMutation({
     mutationFn: async (data: typeof interviewForm) => {
@@ -207,6 +211,134 @@ export default function Interviews() {
         setCalendarMonth(calendarMonth + 1);
       }
     }
+  };
+
+  // Action handlers
+  const handleJoinMeeting = (interview: Interview) => {
+    // Generate Google Meet link
+    const meetUrl = `https://meet.google.com/new`;
+    window.open(meetUrl, '_blank');
+    
+    toast({
+      title: "Meeting Started",
+      description: "Google Meet opened in new tab",
+    });
+  };
+
+  const handleEditInterview = (interview: Interview) => {
+    setEditingInterview(interview);
+    const candidate = candidates?.find(c => c.id === interview.candidateId);
+    if (candidate) {
+      setSelectedCandidate(candidate);
+      setCandidateSearch(candidate.fullName);
+    }
+    
+    // Convert timestamp back to datetime-local format
+    const interviewDate = new Date(interview.scheduledDate);
+    const localDateTime = new Date(interviewDate.getTime() - interviewDate.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+    
+    setInterviewForm({
+      candidateId: interview.candidateId,
+      scheduledDate: localDateTime,
+      interviewType: interview.interviewType,
+      notes: interview.notes || ""
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSendEmail = async (interview: Interview, candidate: any) => {
+    if (!candidate) {
+      toast({
+        title: "Error",
+        description: "Candidate information not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const interviewDate = new Date(interview.scheduledDate);
+      const emailData = {
+        to: candidate.email,
+        subject: `Interview Scheduled - ${candidate.position}`,
+        body: `Dear ${candidate.fullName},
+
+Your interview has been scheduled for:
+Date: ${interviewDate.toLocaleDateString()}
+Time: ${interviewDate.toLocaleTimeString()}
+Type: ${interview.interviewType.charAt(0).toUpperCase() + interview.interviewType.slice(1)}
+
+${interview.notes ? `Notes: ${interview.notes}` : ''}
+
+We look forward to speaking with you.
+
+Best regards,
+Recruitment Team`
+      };
+
+      const res = await apiRequest("POST", "/api/send-email", emailData);
+      
+      toast({
+        title: "Email Sent",
+        description: `Interview details sent to ${candidate.email}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Email Failed",
+        description: "Failed to send email. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Update interview mutation
+  const updateInterviewMutation = useMutation({
+    mutationFn: async (data: typeof interviewForm & { id: string }) => {
+      const res = await apiRequest("PUT", `/api/interviews/${data.id}`, data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/interviews"] });
+      setIsEditDialogOpen(false);
+      setEditingInterview(null);
+      setInterviewForm({
+        candidateId: "",
+        scheduledDate: "",
+        interviewType: "video",
+        notes: ""
+      });
+      setSelectedCandidate(null);
+      setCandidateSearch("");
+      toast({
+        title: "Interview Updated",
+        description: "Interview updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleUpdateInterview = () => {
+    if (!editingInterview || !interviewForm.candidateId || !interviewForm.scheduledDate) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updateInterviewMutation.mutate({
+      ...interviewForm,
+      id: editingInterview.id
+    });
   };
 
   if (isLoading || !isAuthenticated) {
@@ -379,6 +511,117 @@ export default function Interviews() {
                         className="flex-1"
                       >
                         {t("cancel")}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Edit Interview Dialog */}
+              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Edit Interview</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="relative" ref={dropdownRef}>
+                      <Label>Candidate</Label>
+                      <Input
+                        value={candidateSearch}
+                        onChange={(e) => {
+                          setCandidateSearch(e.target.value);
+                          setShowCandidateDropdown(true);
+                        }}
+                        onFocus={() => setShowCandidateDropdown(true)}
+                        placeholder="Search candidates by name or email..."
+                        className="mt-2"
+                      />
+                      {selectedCandidate && (
+                        <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Avatar className="w-6 h-6">
+                              <AvatarFallback className="text-xs">
+                                {selectedCandidate.fullName.split(' ').map((n: string) => n[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm font-medium">{selectedCandidate.fullName}</span>
+                            <span className="text-xs text-gray-500">({selectedCandidate.email})</span>
+                          </div>
+                        </div>
+                      )}
+                      {showCandidateDropdown && candidateSearch && filteredCandidates.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                          {filteredCandidates.slice(0, 10).map((candidate) => (
+                            <div
+                              key={candidate.id}
+                              className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                              onClick={() => {
+                                setSelectedCandidate(candidate);
+                                setCandidateSearch(candidate.fullName);
+                                setShowCandidateDropdown(false);
+                                setInterviewForm(prev => ({ ...prev, candidateId: candidate.id }));
+                              }}
+                            >
+                              <div className="flex items-center space-x-3">
+                                <Avatar className="w-8 h-8">
+                                  <AvatarFallback>
+                                    {candidate.fullName.split(' ').map((n: string) => n[0]).join('')}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">{candidate.fullName}</div>
+                                  <div className="text-xs text-gray-500">{candidate.email}</div>
+                                  <div className="text-xs text-blue-600">{candidate.position.replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <Label>Interview Date & Time</Label>
+                      <Input
+                        type="datetime-local"
+                        value={interviewForm.scheduledDate}
+                        onChange={(e) => setInterviewForm(prev => ({ ...prev, scheduledDate: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label>Interview Type</Label>
+                      <Select value={interviewForm.interviewType} onValueChange={(value) => setInterviewForm(prev => ({ ...prev, interviewType: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="video">Video Call</SelectItem>
+                          <SelectItem value="phone">Phone Call</SelectItem>
+                          <SelectItem value="in-person">In-person</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Notes</Label>
+                      <Textarea
+                        value={interviewForm.notes}
+                        onChange={(e) => setInterviewForm(prev => ({ ...prev, notes: e.target.value }))}
+                        placeholder="Additional notes..."
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button 
+                        onClick={handleUpdateInterview} 
+                        disabled={updateInterviewMutation.isPending}
+                        className="flex-1"
+                      >
+                        {updateInterviewMutation.isPending ? "Updating..." : "Update Interview"}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setIsEditDialogOpen(false)}
+                        className="flex-1"
+                      >
+                        Cancel
                       </Button>
                     </div>
                   </div>
@@ -584,15 +827,15 @@ export default function Interviews() {
                               <Button 
                                 variant="ghost" 
                                 size="sm"
-                                onClick={() => toast({ title: "Join Interview", description: "Interview link functionality coming soon!" })}
-                                title="Join Interview"
+                                onClick={() => handleJoinMeeting(interview)}
+                                title="Start Google Meet"
                               >
                                 {getTypeIcon(interview.interviewType)}
                               </Button>
                               <Button 
                                 variant="ghost" 
                                 size="sm"
-                                onClick={() => toast({ title: "Edit Interview", description: "Edit functionality coming soon!" })}
+                                onClick={() => handleEditInterview(interview)}
                                 title="Edit Interview"
                               >
                                 <Edit className="w-4 h-4" />
@@ -600,7 +843,7 @@ export default function Interviews() {
                               <Button 
                                 variant="ghost" 
                                 size="sm"
-                                onClick={() => toast({ title: "Send Email", description: "Email functionality coming soon!" })}
+                                onClick={() => handleSendEmail(interview, candidate)}
                                 title="Send Email"
                               >
                                 <Mail className="w-4 h-4" />

@@ -400,13 +400,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Send interview invitation email
       try {
-        const candidate = await storage.getCandidateById(interviewData.candidateId);
+        const candidate = await storage.getCandidateById(validatedData.candidateId);
         if (candidate) {
           const emailHtml = getInterviewInvitationEmail(
             candidate.fullName,
             candidate.position,
-            new Date(interviewData.scheduledDate).toLocaleString(),
-            interviewData.interviewType
+            new Date(validatedData.scheduledDate).toLocaleString(),
+            validatedData.interviewType
           );
           
           await sendEmail({
@@ -435,6 +435,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ message: 'Failed to create interview' });
       }
+    }
+  });
+
+  // Update interview endpoint
+  app.put('/api/interviews/:id', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Convert date to ISO string for string-mode timestamp
+      const processedData = {
+        ...req.body,
+        scheduledDate: new Date(req.body.scheduledDate).toISOString()
+      };
+      
+      const validatedData = insertInterviewSchema.omit({ id: true }).parse(processedData);
+      const interview = await storage.updateInterview(id, validatedData);
+      
+      res.json(interview);
+    } catch (error) {
+      console.error('Error updating interview:', error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: 'Invalid interview data', errors: error.errors });
+      } else {
+        res.status(500).json({ message: 'Failed to update interview' });
+      }
+    }
+  });
+
+  // Send email endpoint
+  app.post('/api/send-email', isAuthenticated, async (req, res) => {
+    try {
+      const { to, subject, body } = req.body;
+      
+      if (!to || !subject || !body) {
+        return res.status(400).json({ message: 'Missing required fields: to, subject, body' });
+      }
+
+      await sendEmail({
+        to,
+        subject,
+        html: body.replace(/\n/g, '<br>'),
+      });
+      
+      res.json({ message: 'Email sent successfully' });
+    } catch (error) {
+      console.error('Error sending email:', error);
+      res.status(500).json({ message: 'Failed to send email' });
     }
   });
 
