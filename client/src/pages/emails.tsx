@@ -407,9 +407,9 @@ export default function Emails() {
                             <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email Content</label>
                             <div className="mt-2 p-4 bg-gray-50 rounded-lg border">
                               <div 
-                                className="text-sm text-gray-700 whitespace-pre-wrap"
+                                className="text-sm text-gray-700"
                                 dangerouslySetInnerHTML={{ 
-                                  __html: email.content?.replace(/\n/g, '<br>') || "No content available" 
+                                  __html: email.content || "No content available" 
                                 }}
                               />
                             </div>
@@ -465,10 +465,14 @@ export default function Emails() {
                           <p className="text-sm text-gray-600">
                             Sent to: <span className="font-medium">{(email as any).candidateEmail || "candidate@email.com"}</span> • {email.sentAt || "Just now"}
                           </p>
-                          <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                            {email.content?.substring(0, 150) || "No content available"}
-                            {email.content && email.content.length > 150 && "..."}
-                          </p>
+                          <div className="text-sm text-gray-500 mt-1 line-clamp-2">
+                            <div 
+                              dangerouslySetInnerHTML={{ 
+                                __html: (email.content?.replace(/<[^>]*>/g, '').substring(0, 150) || "No content available") + 
+                                        (email.content && email.content.replace(/<[^>]*>/g, '').length > 150 ? "..." : "")
+                              }}
+                            />
+                          </div>
                         </div>
                       )}
                     </CardContent>
