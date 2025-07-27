@@ -529,12 +529,9 @@ Recruitment Team`
 
               {/* Edit Interview Dialog */}
               <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="sm:max-w-md" aria-describedby="edit-interview-description">
+                <DialogContent className="sm:max-w-md">
                   <DialogHeader>
                     <DialogTitle>Edit Interview</DialogTitle>
-                    <DialogDescription id="edit-interview-description">
-                      Update interview details including candidate, date, time, and type.
-                    </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="relative" ref={dropdownRef}>
