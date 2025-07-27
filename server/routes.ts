@@ -452,13 +452,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertInterviewSchema.partial().parse(processedData);
       const interview = await storage.updateInterview(id, validatedData);
       
+      console.log('Interview updated successfully:', interview);
+      
+      if (!interview) {
+        return res.status(404).json({ message: 'Interview not found' });
+      }
+      
       res.json(interview);
     } catch (error) {
       console.error('Error updating interview:', error);
       if (error instanceof z.ZodError) {
-        res.status(400).json({ message: 'Invalid interview data', errors: error.errors });
+        return res.status(400).json({ message: 'Invalid interview data', errors: error.errors });
       } else {
-        res.status(500).json({ message: 'Failed to update interview' });
+        return res.status(500).json({ message: 'Failed to update interview', error: error.message });
       }
     }
   });

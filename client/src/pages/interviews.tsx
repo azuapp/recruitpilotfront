@@ -296,8 +296,22 @@ Recruitment Team`
   // Update interview mutation
   const updateInterviewMutation = useMutation({
     mutationFn: async (data: typeof interviewForm & { id: string }) => {
-      const res = await apiRequest("PUT", `/api/interviews/${data.id}`, data);
-      return await res.json();
+      try {
+        const res = await apiRequest("PUT", `/api/interviews/${data.id}`, data);
+        
+        // Check if response is HTML (error page) instead of JSON
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await res.text();
+          console.error('Server returned HTML instead of JSON:', text.substring(0, 200));
+          throw new Error('Server error: Expected JSON response but got HTML');
+        }
+        
+        return await res.json();
+      } catch (error) {
+        console.error('Error in interview update mutation:', error);
+        throw error;
+      }
     },
     onSuccess: async (updatedInterview) => {
       console.log('Interview update successful:', updatedInterview);
@@ -404,7 +418,7 @@ Recruitment Team`
                     {t("scheduleInterview")}
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="sm:max-w-md" aria-describedby="schedule-interview-desc">
                   <DialogHeader>
                     <DialogTitle>{t("scheduleInterview")}</DialogTitle>
                   </DialogHeader>
