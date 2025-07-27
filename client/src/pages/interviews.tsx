@@ -1,9 +1,16 @@
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import Sidebar from "@/components/sidebar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +36,54 @@ interface Interview {
 export default function Interviews() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
+  const { t, isRTL } = useLanguage();
+  const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
+  const [interviewForm, setInterviewForm] = useState({
+    candidateId: "",
+    scheduledDate: "",
+    interviewType: "video",
+    notes: ""
+  });
+
+  const scheduleInterviewMutation = useMutation({
+    mutationFn: async (data: typeof interviewForm) => {
+      const res = await apiRequest("POST", "/api/interviews", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/interviews"] });
+      setIsScheduleDialogOpen(false);
+      setInterviewForm({
+        candidateId: "",
+        scheduledDate: "",
+        interviewType: "video",
+        notes: ""
+      });
+      toast({
+        title: t("scheduleInterview"),
+        description: "Interview scheduled successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleScheduleInterview = () => {
+    if (!interviewForm.candidateId || !interviewForm.scheduledDate) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    scheduleInterviewMutation.mutate(interviewForm);
+  };
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -52,10 +107,10 @@ export default function Interviews() {
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
-      scheduled: { label: "Scheduled", className: "bg-blue-100 text-blue-800" },
-      completed: { label: "Completed", className: "bg-green-100 text-green-800" },
-      cancelled: { label: "Cancelled", className: "bg-red-100 text-red-800" },
-      rescheduled: { label: "Rescheduled", className: "bg-amber-100 text-amber-800" },
+      scheduled: { label: t("scheduled"), className: "bg-blue-100 text-blue-800" },
+      completed: { label: t("completed"), className: "bg-green-100 text-green-800" },
+      cancelled: { label: t("cancelled"), className: "bg-red-100 text-red-800" },
+      rescheduled: { label: t("rescheduled"), className: "bg-amber-100 text-amber-800" },
     };
     
     const config = statusMap[status as keyof typeof statusMap] || statusMap.scheduled;
@@ -105,22 +160,86 @@ export default function Interviews() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className={`flex min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`}>
       <Sidebar />
       
       <main className="flex-1 lg:ml-64">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 p-6">
+        <header className="bg-white shadow-sm border-b border-gray-200 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Interviews</h2>
-              <p className="text-gray-600 mt-1">Schedule and manage candidate interviews</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{t("interviews")}</h2>
+              <p className="text-gray-600 mt-1 text-sm sm:text-base">Schedule and manage candidate interviews</p>
             </div>
             <div className="flex space-x-3">
-              <Button>
-                <CalendarPlus className="w-4 h-4 mr-2" />
-                Schedule Interview
-              </Button>
+              <Dialog open={isScheduleDialogOpen} onOpenChange={setIsScheduleDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="w-full sm:w-auto">
+                    <CalendarPlus className="w-4 h-4 mr-2" />
+                    {t("scheduleInterview")}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>{t("scheduleInterview")}</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Candidate ID</Label>
+                      <Input
+                        value={interviewForm.candidateId}
+                        onChange={(e) => setInterviewForm(prev => ({ ...prev, candidateId: e.target.value }))}
+                        placeholder="Enter candidate ID"
+                      />
+                    </div>
+                    <div>
+                      <Label>{t("interviewDate")}</Label>
+                      <Input
+                        type="datetime-local"
+                        value={interviewForm.scheduledDate}
+                        onChange={(e) => setInterviewForm(prev => ({ ...prev, scheduledDate: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label>{t("interviewType")}</Label>
+                      <Select value={interviewForm.interviewType} onValueChange={(value) => setInterviewForm(prev => ({ ...prev, interviewType: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="video">Video Call</SelectItem>
+                          <SelectItem value="phone">Phone Call</SelectItem>
+                          <SelectItem value="in-person">In-person</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>{t("notes")}</Label>
+                      <Textarea
+                        value={interviewForm.notes}
+                        onChange={(e) => setInterviewForm(prev => ({ ...prev, notes: e.target.value }))}
+                        placeholder="Additional notes..."
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button 
+                        onClick={handleScheduleInterview} 
+                        disabled={scheduleInterviewMutation.isPending}
+                        className="flex-1"
+                      >
+                        {scheduleInterviewMutation.isPending ? "Scheduling..." : t("schedule")}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setIsScheduleDialogOpen(false)}
+                        className="flex-1"
+                      >
+                        {t("cancel")}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </header>

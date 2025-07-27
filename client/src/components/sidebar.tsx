@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { 
   Users as UsersIcon, 
   BarChart3, 
@@ -17,39 +19,39 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const navigationItems = [
+const getNavigationItems = (t: (key: any) => string) => [
   {
-    name: "Dashboard",
+    name: t("dashboard"),
     href: "/",
     icon: BarChart3,
   },
   {
-    name: "Candidates",
+    name: t("candidates"),
     href: "/candidates",
     icon: Bus,
   },
   {
-    name: "Application Form",
+    name: t("applicationForm"),
     href: "/apply",
     icon: FileText,
   },
   {
-    name: "Interviews",
+    name: t("interviews"),
     href: "/interviews",
     icon: Calendar,
   },
   {
-    name: "Email History",
+    name: t("emailHistory"),
     href: "/emails",
     icon: Mail,
   },
   {
-    name: "AI Assessments",
+    name: t("assessments"),
     href: "/assessments",
     icon: Brain,
   },
   {
-    name: "User Management",
+    name: t("users"),
     href: "/users",
     icon: UsersIcon,
   },
@@ -58,7 +60,9 @@ const navigationItems = [
 export default function Sidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [location] = useLocation();
-  const { user } = useAuth();
+  const { user, logoutMutation } = useAuth();
+  const { t, isRTL } = useLanguage();
+  const navigationItems = getNavigationItems(t);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -108,9 +112,12 @@ export default function Sidebar() {
               <UsersIcon className="text-white text-lg" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">RecruitPro</h1>
-              <p className="text-sm text-gray-500">AI Recruitment</p>
+              <h1 className="text-xl font-bold text-gray-900">{t("recruitPro")}</h1>
+              <p className="text-sm text-gray-500">{t("aiRecruitment")}</p>
             </div>
+          </div>
+          <div className="mt-4 flex justify-center">
+            <LanguageSwitcher />
           </div>
         </div>
 
@@ -161,12 +168,12 @@ export default function Sidebar() {
                   : user?.email?.split('@')[0] || "Admin User"
                 }
               </p>
-              <p className="text-xs text-gray-500">HR Manager</p>
+              <p className="text-xs text-gray-500">{t("hrManager")}</p>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => window.location.href = '/api/logout'}
+              onClick={() => logoutMutation.mutate()}
               className="text-gray-400 hover:text-gray-600"
             >
               <LogOut className="w-4 h-4" />

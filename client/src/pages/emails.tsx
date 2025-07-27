@@ -1,9 +1,16 @@
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import Sidebar from "@/components/sidebar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +31,54 @@ interface EmailHistory {
 export default function Emails() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
+  const { t, isRTL } = useLanguage();
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [emailForm, setEmailForm] = useState({
+    candidateId: "",
+    subject: "",
+    content: "",
+    emailType: "follow-up"
+  });
+
+  const sendEmailMutation = useMutation({
+    mutationFn: async (data: typeof emailForm) => {
+      const res = await apiRequest("POST", "/api/emails/send", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
+      setIsEmailDialogOpen(false);
+      setEmailForm({
+        candidateId: "",
+        subject: "",
+        content: "",
+        emailType: "follow-up"
+      });
+      toast({
+        title: t("sendEmail"),
+        description: "Email sent successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSendEmail = () => {
+    if (!emailForm.candidateId || !emailForm.subject || !emailForm.content) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    sendEmailMutation.mutate(emailForm);
+  };
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -47,10 +102,10 @@ export default function Emails() {
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
-      sent: { label: "Sent", className: "bg-green-100 text-green-800" },
-      delivered: { label: "Delivered", className: "bg-green-100 text-green-800" },
-      pending: { label: "Pending", className: "bg-amber-100 text-amber-800" },
-      failed: { label: "Failed", className: "bg-red-100 text-red-800" },
+      sent: { label: t("sent"), className: "bg-green-100 text-green-800" },
+      delivered: { label: t("delivered"), className: "bg-green-100 text-green-800" },
+      pending: { label: t("pending"), className: "bg-amber-100 text-amber-800" },
+      failed: { label: t("failed"), className: "bg-red-100 text-red-800" },
     };
     
     const config = statusMap[status as keyof typeof statusMap] || statusMap.pending;
@@ -117,22 +172,89 @@ export default function Emails() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className={`flex min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`}>
       <Sidebar />
       
       <main className="flex-1 lg:ml-64">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 p-6">
+        <header className="bg-white shadow-sm border-b border-gray-200 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Email History</h2>
-              <p className="text-gray-600 mt-1">Track all email communications</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{t("emailHistory")}</h2>
+              <p className="text-gray-600 mt-1 text-sm sm:text-base">Track all email communications</p>
             </div>
             <div className="flex space-x-3">
-              <Button>
-                <Send className="w-4 h-4 mr-2" />
-                Send Email
-              </Button>
+              <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="w-full sm:w-auto">
+                    <Send className="w-4 h-4 mr-2" />
+                    {t("sendEmail")}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>{t("sendEmail")}</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Candidate ID</Label>
+                      <Input
+                        value={emailForm.candidateId}
+                        onChange={(e) => setEmailForm(prev => ({ ...prev, candidateId: e.target.value }))}
+                        placeholder="Enter candidate ID"
+                      />
+                    </div>
+                    <div>
+                      <Label>{t("emailSubject")}</Label>
+                      <Input
+                        value={emailForm.subject}
+                        onChange={(e) => setEmailForm(prev => ({ ...prev, subject: e.target.value }))}
+                        placeholder="Email subject..."
+                      />
+                    </div>
+                    <div>
+                      <Label>{t("emailType")}</Label>
+                      <Select value={emailForm.emailType} onValueChange={(value) => setEmailForm(prev => ({ ...prev, emailType: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="confirmation">Confirmation</SelectItem>
+                          <SelectItem value="interview">Interview</SelectItem>
+                          <SelectItem value="follow-up">Follow-up</SelectItem>
+                          <SelectItem value="rejection">Rejection</SelectItem>
+                          <SelectItem value="offer">Offer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>{t("emailContent")}</Label>
+                      <Textarea
+                        value={emailForm.content}
+                        onChange={(e) => setEmailForm(prev => ({ ...prev, content: e.target.value }))}
+                        placeholder="Email content..."
+                        rows={6}
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button 
+                        onClick={handleSendEmail} 
+                        disabled={sendEmailMutation.isPending}
+                        className="flex-1"
+                      >
+                        {sendEmailMutation.isPending ? "Sending..." : t("send")}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setIsEmailDialogOpen(false)}
+                        className="flex-1"
+                      >
+                        {t("cancel")}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </header>
