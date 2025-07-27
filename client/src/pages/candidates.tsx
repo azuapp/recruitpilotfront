@@ -198,7 +198,7 @@ export default function Candidates() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Date Range</Label>
+                  <Label>{t("dateRange")}</Label>
                   <Input type="date" className="mt-2" />
                 </div>
               </div>
