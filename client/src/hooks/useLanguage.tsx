@@ -58,6 +58,7 @@ const translations = {
     reviewScoresInsights: "Review scores and insights",
     interviewsScheduledActivity: "Interviews scheduled",
     manageYourCalendar: "Manage your calendar",
+    manageReviewApplications: "Manage and review job applications",
     
     // Candidates
     exportCandidates: "Export Candidates",
@@ -169,6 +170,7 @@ const translations = {
     reviewScoresInsights: "مراجعة النتائج والرؤى",
     interviewsScheduledActivity: "تم جدولة المقابلات",
     manageYourCalendar: "إدارة التقويم الخاص بك",
+    manageReviewApplications: "إدارة ومراجعة طلبات الوظائف",
     
     // Candidates
     exportCandidates: "تصدير المرشحين",
