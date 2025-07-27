@@ -4,6 +4,8 @@ import {
   assessments,
   interviews,
   emailHistory,
+  jobDescriptions,
+  jobFitScores,
   type User,
   type InsertUser,
   type Candidate,
@@ -14,8 +16,13 @@ import {
   type InsertInterview,
   type EmailHistory,
   type InsertEmail,
+  type JobDescription,
+  type InsertJobDescription,
+  type JobFitScore,
+  type InsertJobFitScore,
   type CandidateWithAssessment,
   type CandidateWithRelations,
+  type CandidateWithFitScore,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, like, or, sql } from "drizzle-orm";
@@ -61,6 +68,21 @@ export interface IStorage {
   createEmail(email: InsertEmail): Promise<EmailHistory>;
   getEmails(candidateId?: string): Promise<EmailHistory[]>;
   updateEmailStatus(id: string, status: string): Promise<EmailHistory>;
+  
+  // Job Description operations
+  createJobDescription(jobDescription: InsertJobDescription): Promise<JobDescription>;
+  getJobDescriptions(): Promise<JobDescription[]>;
+  getJobDescriptionById(id: string): Promise<JobDescription | undefined>;
+  getJobDescriptionByPosition(position: string): Promise<JobDescription | undefined>;
+  updateJobDescription(id: string, updates: Partial<JobDescription>): Promise<JobDescription>;
+  deleteJobDescription(id: string): Promise<void>;
+  
+  // Job Fit Score operations
+  createJobFitScore(jobFitScore: InsertJobFitScore): Promise<JobFitScore>;
+  getJobFitScoresByCandidateId(candidateId: string): Promise<JobFitScore[]>;
+  getJobFitScoreByCandidate(candidateId: string, jobDescriptionId: string): Promise<JobFitScore | undefined>;
+  getCandidatesWithFitScores(jobDescriptionId?: string): Promise<CandidateWithFitScore[]>;
+  updateJobFitScore(id: string, updates: Partial<JobFitScore>): Promise<JobFitScore>;
   
   // Statistics
   getStats(): Promise<{
@@ -326,6 +348,110 @@ export class DatabaseStorage implements IStorage {
       .where(eq(emailHistory.id, id))
       .returning();
     return updatedEmail;
+  }
+
+  // Job Description operations
+  async createJobDescription(jobDescriptionData: InsertJobDescription): Promise<JobDescription> {
+    const [jobDescription] = await db
+      .insert(jobDescriptions)
+      .values(jobDescriptionData)
+      .returning();
+    return jobDescription;
+  }
+
+  async getJobDescriptions(): Promise<JobDescription[]> {
+    return await db.select().from(jobDescriptions).where(eq(jobDescriptions.isActive, true)).orderBy(desc(jobDescriptions.createdAt));
+  }
+
+  async getJobDescriptionById(id: string): Promise<JobDescription | undefined> {
+    const [jobDescription] = await db.select().from(jobDescriptions).where(eq(jobDescriptions.id, id));
+    return jobDescription;
+  }
+
+  async getJobDescriptionByPosition(position: string): Promise<JobDescription | undefined> {
+    const [jobDescription] = await db
+      .select()
+      .from(jobDescriptions)
+      .where(and(eq(jobDescriptions.position, position), eq(jobDescriptions.isActive, true)));
+    return jobDescription;
+  }
+
+  async updateJobDescription(id: string, updates: Partial<JobDescription>): Promise<JobDescription> {
+    const [jobDescription] = await db
+      .update(jobDescriptions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(jobDescriptions.id, id))
+      .returning();
+    return jobDescription;
+  }
+
+  async deleteJobDescription(id: string): Promise<void> {
+    await db.update(jobDescriptions).set({ isActive: false }).where(eq(jobDescriptions.id, id));
+  }
+
+  // Job Fit Score operations
+  async createJobFitScore(jobFitScoreData: InsertJobFitScore): Promise<JobFitScore> {
+    const [jobFitScore] = await db
+      .insert(jobFitScores)
+      .values(jobFitScoreData)
+      .returning();
+    return jobFitScore;
+  }
+
+  async getJobFitScoresByCandidateId(candidateId: string): Promise<JobFitScore[]> {
+    return await db.select().from(jobFitScores).where(eq(jobFitScores.candidateId, candidateId));
+  }
+
+  async getJobFitScoreByCandidate(candidateId: string, jobDescriptionId: string): Promise<JobFitScore | undefined> {
+    const [jobFitScore] = await db
+      .select()
+      .from(jobFitScores)
+      .where(and(eq(jobFitScores.candidateId, candidateId), eq(jobFitScores.jobDescriptionId, jobDescriptionId)));
+    return jobFitScore;
+  }
+
+  async getCandidatesWithFitScores(jobDescriptionId?: string): Promise<CandidateWithFitScore[]> {
+    if (jobDescriptionId) {
+      const result = await db
+        .select({
+          candidate: candidates,
+          fitScore: jobFitScores,
+        })
+        .from(candidates)
+        .leftJoin(jobFitScores, and(
+          eq(candidates.id, jobFitScores.candidateId),
+          eq(jobFitScores.jobDescriptionId, jobDescriptionId)
+        ))
+        .orderBy(desc(jobFitScores.fitScore));
+
+      return result.map(row => ({
+        ...row.candidate,
+        fitScore: row.fitScore || undefined,
+      }));
+    } else {
+      const result = await db
+        .select({
+          candidate: candidates,
+          fitScore: jobFitScores,
+        })
+        .from(candidates)
+        .leftJoin(jobFitScores, eq(candidates.id, jobFitScores.candidateId))
+        .orderBy(desc(candidates.appliedAt));
+
+      return result.map(row => ({
+        ...row.candidate,
+        fitScore: row.fitScore || undefined,
+      }));
+    }
+  }
+
+  async updateJobFitScore(id: string, updates: Partial<JobFitScore>): Promise<JobFitScore> {
+    const [jobFitScore] = await db
+      .update(jobFitScores)
+      .set(updates)
+      .where(eq(jobFitScores.id, id))
+      .returning();
+    return jobFitScore;
   }
 
   // Statistics

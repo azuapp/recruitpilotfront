@@ -1,0 +1,445 @@
+import { useEffect, useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
+import { useToast } from "@/hooks/use-toast";
+import { isUnauthorizedError } from "@/lib/authUtils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import Sidebar from "@/components/sidebar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Briefcase,
+  Calendar
+} from "lucide-react";
+
+interface JobDescription {
+  id: string;
+  position: string;
+  responsibilities: string;
+  requiredExperience: string;
+  skills: string;
+  notes?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface JobDescriptionForm {
+  position: string;
+  responsibilities: string;
+  requiredExperience: string;
+  skills: string;
+  notes: string;
+}
+
+export default function JobDescriptions() {
+  const { toast } = useToast();
+  const { isAuthenticated, isLoading } = useAuth();
+  const { t, isRTL } = useLanguage();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingJobDescription, setEditingJobDescription] = useState<JobDescription | null>(null);
+  const [formData, setFormData] = useState<JobDescriptionForm>({
+    position: "",
+    responsibilities: "",
+    requiredExperience: "",
+    skills: "",
+    notes: "",
+  });
+
+  // Redirect to home if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      toast({
+        title: "Unauthorized",
+        description: "You are logged out. Logging in again...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 500);
+      return;
+    }
+  }, [isAuthenticated, isLoading, toast]);
+
+  const { data: jobDescriptions, isLoading: jobDescriptionsLoading } = useQuery<JobDescription[]>({
+    queryKey: ["/api/job-descriptions"],
+    retry: false,
+  });
+
+  const createJobDescriptionMutation = useMutation({
+    mutationFn: async (data: JobDescriptionForm) => {
+      const res = await apiRequest("POST", "/api/job-descriptions", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/job-descriptions"] });
+      setIsDialogOpen(false);
+      resetForm();
+      toast({
+        title: "Success",
+        description: "Job description created successfully",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to create job description",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateJobDescriptionMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<JobDescriptionForm> }) => {
+      const res = await apiRequest("PUT", `/api/job-descriptions/${id}`, data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/job-descriptions"] });
+      setIsDialogOpen(false);
+      setEditingJobDescription(null);
+      resetForm();
+      toast({
+        title: "Success",
+        description: "Job description updated successfully",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to update job description",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteJobDescriptionMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("DELETE", `/api/job-descriptions/${id}`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/job-descriptions"] });
+      toast({
+        title: "Success",
+        description: "Job description deleted successfully",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to delete job description",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resetForm = () => {
+    setFormData({
+      position: "",
+      responsibilities: "",
+      requiredExperience: "",
+      skills: "",
+      notes: "",
+    });
+  };
+
+  const handleEdit = (jobDescription: JobDescription) => {
+    setEditingJobDescription(jobDescription);
+    setFormData({
+      position: jobDescription.position,
+      responsibilities: jobDescription.responsibilities,
+      requiredExperience: jobDescription.requiredExperience,
+      skills: jobDescription.skills,
+      notes: jobDescription.notes || "",
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.position || !formData.responsibilities || !formData.requiredExperience || !formData.skills) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (editingJobDescription) {
+      updateJobDescriptionMutation.mutate({
+        id: editingJobDescription.id,
+        data: formData,
+      });
+    } else {
+      createJobDescriptionMutation.mutate(formData);
+    }
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm("Are you sure you want to delete this job description?")) {
+      deleteJobDescriptionMutation.mutate(id);
+    }
+  };
+
+  if (isLoading || !isAuthenticated) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div className={`flex min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`}>
+      <Sidebar />
+      
+      <main className="flex-1 lg:ml-64">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b border-gray-200 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Job Descriptions</h2>
+              <p className="text-gray-600 mt-1 text-sm sm:text-base">Manage job requirements for AI-powered candidate scoring</p>
+            </div>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => { setEditingJobDescription(null); resetForm(); }}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Job Description
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingJobDescription ? "Edit Job Description" : "Add New Job Description"}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <Label htmlFor="position">Position Title *</Label>
+                    <Input
+                      id="position"
+                      value={formData.position}
+                      onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                      placeholder="e.g., Frontend Developer, Data Scientist"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="responsibilities">Key Responsibilities *</Label>
+                    <Textarea
+                      id="responsibilities"
+                      value={formData.responsibilities}
+                      onChange={(e) => setFormData({ ...formData, responsibilities: e.target.value })}
+                      placeholder="Describe the main responsibilities and duties for this role..."
+                      rows={4}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="requiredExperience">Required Experience *</Label>
+                    <Textarea
+                      id="requiredExperience"
+                      value={formData.requiredExperience}
+                      onChange={(e) => setFormData({ ...formData, requiredExperience: e.target.value })}
+                      placeholder="Specify years of experience, industry background, specific technologies..."
+                      rows={3}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="skills">Required Skills *</Label>
+                    <Textarea
+                      id="skills"
+                      value={formData.skills}
+                      onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
+                      placeholder="List technical skills, soft skills, certifications, tools..."
+                      rows={4}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="notes">Additional Notes</Label>
+                    <Textarea
+                      id="notes"
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      placeholder="Company culture, benefits, remote work policy, etc."
+                      rows={3}
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsDialogOpen(false);
+                        setEditingJobDescription(null);
+                        resetForm();
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={createJobDescriptionMutation.isPending || updateJobDescriptionMutation.isPending}
+                    >
+                      {editingJobDescription ? "Update" : "Create"}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </header>
+
+        <div className="p-4 sm:p-6 space-y-6">
+          {/* Job Descriptions List */}
+          {jobDescriptionsLoading ? (
+            <div className="text-center py-8">
+              <div className="text-gray-500">Loading job descriptions...</div>
+            </div>
+          ) : !jobDescriptions || jobDescriptions.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Job Descriptions</h3>
+                <p className="text-gray-500 mb-4">
+                  Create job descriptions to enable AI-powered candidate scoring and matching.
+                </p>
+                <Button onClick={() => { setEditingJobDescription(null); resetForm(); setIsDialogOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Your First Job Description
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-6">
+              {jobDescriptions.map((jobDescription) => (
+                <Card key={jobDescription.id}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Briefcase className="w-5 h-5" />
+                          {jobDescription.position}
+                        </CardTitle>
+                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            Created {new Date(jobDescription.createdAt).toLocaleDateString()}
+                          </div>
+                          <Badge variant={jobDescription.isActive ? "default" : "secondary"}>
+                            {jobDescription.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(jobDescription)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(jobDescription.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-2">Responsibilities</h4>
+                        <p className="text-sm text-gray-600 line-clamp-3">
+                          {jobDescription.responsibilities}
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-2">Required Experience</h4>
+                        <p className="text-sm text-gray-600 line-clamp-3">
+                          {jobDescription.requiredExperience}
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-2">Skills</h4>
+                        <p className="text-sm text-gray-600 line-clamp-3">
+                          {jobDescription.skills}
+                        </p>
+                      </div>
+                      {jobDescription.notes && (
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">Additional Notes</h4>
+                          <p className="text-sm text-gray-600 line-clamp-3">
+                            {jobDescription.notes}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}

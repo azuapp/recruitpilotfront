@@ -5,7 +5,8 @@ import { setupAuth, isAuthenticated, isAdmin } from "./auth";
 import { upload } from "./services/fileUpload";
 import { analyzeResume } from "./services/openai";
 import { sendEmail, getApplicationConfirmationEmail, getInterviewInvitationEmail } from "./services/email";
-import { insertCandidateSchema, insertInterviewSchema, insertEmailSchema } from "@shared/schema";
+import { insertCandidateSchema, insertInterviewSchema, insertEmailSchema, insertJobDescriptionSchema, insertJobFitScoreSchema } from "@shared/schema";
+import { calculateJobFitScore } from "./services/jobFitService";
 import { z } from "zod";
 import path from "path";
 import fs from "fs";
@@ -412,6 +413,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ message: 'Failed to create email' });
       }
+    }
+  });
+
+  // Job Descriptions routes
+  app.get('/api/job-descriptions', isAuthenticated, async (req, res) => {
+    try {
+      const jobDescriptions = await storage.getJobDescriptions();
+      res.json(jobDescriptions);
+    } catch (error) {
+      console.error("Error fetching job descriptions:", error);
+      res.status(500).json({ message: "Failed to fetch job descriptions" });
+    }
+  });
+
+  app.post('/api/job-descriptions', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const validatedData = insertJobDescriptionSchema.parse(req.body);
+      const jobDescription = await storage.createJobDescription(validatedData);
+      res.status(201).json(jobDescription);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating job description:", error);
+      res.status(500).json({ message: "Failed to create job description" });
+    }
+  });
+
+  app.get('/api/job-descriptions/:id', isAuthenticated, async (req, res) => {
+    try {
+      const jobDescription = await storage.getJobDescriptionById(req.params.id);
+      if (!jobDescription) {
+        return res.status(404).json({ message: "Job description not found" });
+      }
+      res.json(jobDescription);
+    } catch (error) {
+      console.error("Error fetching job description:", error);
+      res.status(500).json({ message: "Failed to fetch job description" });
+    }
+  });
+
+  app.put('/api/job-descriptions/:id', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const validatedData = insertJobDescriptionSchema.partial().parse(req.body);
+      const jobDescription = await storage.updateJobDescription(req.params.id, validatedData);
+      res.json(jobDescription);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error updating job description:", error);
+      res.status(500).json({ message: "Failed to update job description" });
+    }
+  });
+
+  app.delete('/api/job-descriptions/:id', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      await storage.deleteJobDescription(req.params.id);
+      res.status(200).json({ message: "Job description deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting job description:", error);
+      res.status(500).json({ message: "Failed to delete job description" });
+    }
+  });
+
+  // Job Fit Scores routes
+  app.post('/api/candidates/:candidateId/calculate-fit-score', isAuthenticated, async (req, res) => {
+    try {
+      const { candidateId } = req.params;
+      const { jobDescriptionId } = req.body;
+
+      if (!jobDescriptionId) {
+        return res.status(400).json({ message: "Job description ID is required" });
+      }
+
+      // Get candidate and job description
+      const candidate = await storage.getCandidateById(candidateId);
+      if (!candidate) {
+        return res.status(404).json({ message: "Candidate not found" });
+      }
+
+      const jobDescription = await storage.getJobDescriptionById(jobDescriptionId);
+      if (!jobDescription) {
+        return res.status(404).json({ message: "Job description not found" });
+      }
+
+      // Read CV content if available
+      let cvContent = '';
+      if (candidate.cvFilePath) {
+        try {
+          const cvPath = path.join(process.cwd(), candidate.cvFilePath);
+          if (fs.existsSync(cvPath)) {
+            const cvBuffer = fs.readFileSync(cvPath);
+            const pdfParse = await import('pdf-parse');
+            const pdfData = await pdfParse.default(cvBuffer);
+            cvContent = pdfData.text;
+          }
+        } catch (error) {
+          console.warn("Failed to read CV content:", error);
+        }
+      }
+
+      // Calculate fit score using OpenAI
+      const fitAnalysis = await calculateJobFitScore(candidate, jobDescription, cvContent);
+
+      // Check if score already exists
+      const existingScore = await storage.getJobFitScoreByCandidate(candidateId, jobDescriptionId);
+
+      let jobFitScore;
+      if (existingScore) {
+        // Update existing score
+        jobFitScore = await storage.updateJobFitScore(existingScore.id, {
+          fitScore: fitAnalysis.fitScore,
+          skillMatch: fitAnalysis.skillMatch,
+          experienceAlignment: fitAnalysis.experienceAlignment,
+          languageMatch: fitAnalysis.languageMatch,
+          aiAnalysis: fitAnalysis.analysis,
+        });
+      } else {
+        // Create new score
+        const jobFitScoreData = {
+          candidateId,
+          jobDescriptionId,
+          fitScore: fitAnalysis.fitScore,
+          skillMatch: fitAnalysis.skillMatch,
+          experienceAlignment: fitAnalysis.experienceAlignment,
+          languageMatch: fitAnalysis.languageMatch,
+          aiAnalysis: fitAnalysis.analysis,
+        };
+        jobFitScore = await storage.createJobFitScore(jobFitScoreData);
+      }
+
+      res.json(jobFitScore);
+    } catch (error) {
+      console.error("Error calculating fit score:", error);
+      res.status(500).json({ message: "Failed to calculate fit score" });
+    }
+  });
+
+  app.get('/api/candidates/:candidateId/fit-scores', isAuthenticated, async (req, res) => {
+    try {
+      const fitScores = await storage.getJobFitScoresByCandidateId(req.params.candidateId);
+      res.json(fitScores);
+    } catch (error) {
+      console.error("Error fetching fit scores:", error);
+      res.status(500).json({ message: "Failed to fetch fit scores" });
+    }
+  });
+
+  app.get('/api/candidates-with-fit-scores', isAuthenticated, async (req, res) => {
+    try {
+      const { jobDescriptionId } = req.query;
+      const candidatesWithScores = await storage.getCandidatesWithFitScores(
+        jobDescriptionId as string || undefined
+      );
+      res.json(candidatesWithScores);
+    } catch (error) {
+      console.error("Error fetching candidates with fit scores:", error);
+      res.status(500).json({ message: "Failed to fetch candidates with fit scores" });
     }
   });
 

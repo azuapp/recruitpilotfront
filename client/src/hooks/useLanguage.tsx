@@ -19,6 +19,7 @@ const translations = {
     emailHistory: "Email History",
     assessments: "Assessments",
     users: "Users",
+    jobDescriptions: "Job Descriptions",
     
     // Common actions
     export: "Export",
@@ -138,6 +139,7 @@ const translations = {
     emailHistory: "سجل البريد الإلكتروني",
     assessments: "التقييمات",
     users: "المستخدمين",
+    jobDescriptions: "الوصف الوظيفي",
     
     // Common actions
     export: "تصدير",

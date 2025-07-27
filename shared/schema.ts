@@ -93,11 +93,38 @@ export const emailHistory = pgTable("email_history", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Job descriptions for AI scoring
+export const jobDescriptions = pgTable("job_descriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  position: varchar("position").notNull(),
+  responsibilities: text("responsibilities").notNull(),
+  requiredExperience: text("required_experience").notNull(),
+  skills: text("skills").notNull(),
+  notes: text("notes"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Job fit scores
+export const jobFitScores = pgTable("job_fit_scores", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  candidateId: varchar("candidate_id").notNull().references(() => candidates.id, { onDelete: 'cascade' }),
+  jobDescriptionId: varchar("job_description_id").notNull().references(() => jobDescriptions.id, { onDelete: 'cascade' }),
+  fitScore: integer("fit_score").notNull(), // 0-100
+  skillMatch: integer("skill_match").notNull(),
+  experienceAlignment: integer("experience_alignment").notNull(),
+  languageMatch: integer("language_match").notNull(),
+  aiAnalysis: text("ai_analysis").notNull(),
+  calculatedAt: timestamp("calculated_at").defaultNow(),
+});
+
 // Define relations
 export const candidatesRelations = relations(candidates, ({ many }) => ({
   assessments: many(assessments),
   interviews: many(interviews),
   emails: many(emailHistory),
+  jobFitScores: many(jobFitScores),
 }));
 
 export const assessmentsRelations = relations(assessments, ({ one }) => ({
@@ -118,6 +145,21 @@ export const emailHistoryRelations = relations(emailHistory, ({ one }) => ({
   candidate: one(candidates, {
     fields: [emailHistory.candidateId],
     references: [candidates.id],
+  }),
+}));
+
+export const jobDescriptionsRelations = relations(jobDescriptions, ({ many }) => ({
+  jobFitScores: many(jobFitScores),
+}));
+
+export const jobFitScoresRelations = relations(jobFitScores, ({ one }) => ({
+  candidate: one(candidates, {
+    fields: [jobFitScores.candidateId],
+    references: [candidates.id],
+  }),
+  jobDescription: one(jobDescriptions, {
+    fields: [jobFitScores.jobDescriptionId],
+    references: [jobDescriptions.id],
   }),
 }));
 
@@ -184,4 +226,26 @@ export type CandidateWithRelations = Candidate & {
   assessments: Assessment[];
   interviews: Interview[];
   emails: EmailHistory[];
+  jobFitScores: JobFitScore[];
+};
+
+// Job Description schemas
+export const insertJobDescriptionSchema = createInsertSchema(jobDescriptions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertJobFitScoreSchema = createInsertSchema(jobFitScores).omit({
+  id: true,
+  calculatedAt: true,
+});
+
+export type InsertJobDescription = z.infer<typeof insertJobDescriptionSchema>;
+export type JobDescription = typeof jobDescriptions.$inferSelect;
+export type InsertJobFitScore = z.infer<typeof insertJobFitScoreSchema>;
+export type JobFitScore = typeof jobFitScores.$inferSelect;
+
+export type CandidateWithFitScore = Candidate & {
+  fitScore?: JobFitScore;
 };

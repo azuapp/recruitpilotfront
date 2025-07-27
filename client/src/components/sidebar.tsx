@@ -13,6 +13,7 @@ import {
   Calendar, 
   Mail, 
   Brain,
+  Briefcase,
   Menu,
   X,
   LogOut
@@ -49,6 +50,11 @@ const getNavigationItems = (t: (key: any) => string) => [
     name: t("assessments"),
     href: "/assessments",
     icon: Brain,
+  },
+  {
+    name: t("jobDescriptions"),
+    href: "/job-descriptions",
+    icon: Briefcase,
   },
   {
     name: t("users"),
