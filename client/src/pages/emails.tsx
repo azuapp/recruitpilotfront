@@ -314,55 +314,129 @@ export default function Emails() {
         </header>
 
         <div className="p-6">
-          {/* Email List */}
-          <Card>
-            <CardContent className="p-0">
-              <div className="divide-y divide-gray-200">
-                {emailsLoading ? (
-                  <div className="p-6 text-center text-gray-500">
-                    Loading emails...
-                  </div>
-                ) : emails?.length === 0 ? (
-                  <div className="p-6 text-center text-gray-500">
-                    No emails sent yet. Email history will appear here once emails are sent to candidates.
-                  </div>
-                ) : (
-                  // Display mock data or real data
-                  (emails?.length ? emails : mockEmails).map((email, index) => (
-                    <div key={email.id || index} className="p-6 hover:bg-gray-50">
-                      <div className="flex items-start space-x-4">
-                        <Avatar className="w-12 h-12">
-                          <AvatarFallback>
-                            {(email.candidateName || "Unknown").split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-medium text-gray-900">
+          {/* Email History Cards */}
+          <div className="space-y-6">
+            {emailsLoading ? (
+              <div className="text-center py-12">
+                <div className="text-gray-500">Loading emails...</div>
+              </div>
+            ) : emails?.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-gray-500">No emails sent yet. Email history will appear here once emails are sent to candidates.</div>
+              </div>
+            ) : (
+              // Display email cards with full details
+              (emails?.length ? emails : mockEmails).map((email, index) => (
+                <Card key={email.id || index} className="overflow-hidden">
+                  <CardContent className="p-0">
+                    {/* Email Header */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <Avatar className="w-12 h-12">
+                            <AvatarFallback className="bg-blue-100 text-blue-600">
+                              {(email.candidateName || "Unknown").split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">
                               {email.subject}
                             </h3>
-                            <span className="text-sm text-gray-500">
-                              {email.sentAt}
-                            </span>
+                            <p className="text-sm text-gray-600">
+                              To: <span className="font-medium">{email.candidateName || "Unknown Candidate"}</span>
+                            </p>
                           </div>
-                          <p className="text-sm text-gray-600 mt-1">
-                            Sent to: {email.candidateEmail || "candidate@email.com"}
-                          </p>
-                          <p className="text-sm text-gray-500 mt-2 line-clamp-2">
-                            {email.content}
-                          </p>
-                          <div className="flex items-center space-x-4 mt-3">
-                            {getStatusBadge(email.status)}
-                            {getTypeBadge(email.type)}
-                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          {getStatusBadge(email.status)}
+                          {getTypeBadge(email.type)}
                         </div>
                       </div>
                     </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
+
+                    {/* Email Details */}
+                    <div className="px-6 py-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Recipient Email</label>
+                          <p className="text-sm font-medium text-gray-900 mt-1">
+                            {email.candidateEmail || "candidate@email.com"}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Sent Date</label>
+                          <p className="text-sm font-medium text-gray-900 mt-1">
+                            {email.sentAt || "Just now"}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email Type</label>
+                          <p className="text-sm font-medium text-gray-900 mt-1">
+                            {email.type?.charAt(0).toUpperCase() + email.type?.slice(1) || "General"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Email Content */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email Content</label>
+                        <div className="mt-2 p-4 bg-gray-50 rounded-lg border">
+                          <div 
+                            className="text-sm text-gray-700 whitespace-pre-wrap"
+                            dangerouslySetInnerHTML={{ 
+                              __html: email.content?.replace(/\n/g, '<br>') || "No content available" 
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Email Footer */}
+                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+                        <div className="flex items-center space-x-4">
+                          <span className="text-xs text-gray-500">
+                            Email ID: {email.id || `mock-${index}`}
+                          </span>
+                          {email.candidateId && (
+                            <span className="text-xs text-gray-500">
+                              Candidate ID: {email.candidateId}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              // Copy email content to clipboard
+                              navigator.clipboard.writeText(email.content || "");
+                              toast({
+                                title: "Copied",
+                                description: "Email content copied to clipboard",
+                              });
+                            }}
+                          >
+                            Copy Content
+                          </Button>
+                          {email.candidateEmail && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                // Open email client with pre-filled data
+                                window.location.href = `mailto:${email.candidateEmail}?subject=Re: ${email.subject}`;
+                              }}
+                            >
+                              Reply
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
         </div>
       </main>
     </div>
