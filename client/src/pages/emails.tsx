@@ -42,6 +42,7 @@ export default function Emails() {
   const [candidateSearch, setCandidateSearch] = useState("");
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
   const [showCandidateDropdown, setShowCandidateDropdown] = useState(false);
+  const [expandedEmails, setExpandedEmails] = useState<Set<string>>(new Set());
 
   // Send email mutation 
   const sendEmailMutation = useMutation({
@@ -92,6 +93,17 @@ export default function Emails() {
     };
 
     sendEmailMutation.mutate(emailData);
+  };
+
+  // Toggle email card expansion
+  const toggleEmailExpansion = (emailId: string) => {
+    const newExpanded = new Set(expandedEmails);
+    if (newExpanded.has(emailId)) {
+      newExpanded.delete(emailId);
+    } else {
+      newExpanded.add(emailId);
+    }
+    setExpandedEmails(newExpanded);
   };
 
   // Redirect to home if not authenticated
@@ -326,115 +338,143 @@ export default function Emails() {
               </div>
             ) : (
               // Display email cards with full details
-              (emails?.length ? emails : mockEmails).map((email, index) => (
-                <Card key={email.id || index} className="overflow-hidden">
-                  <CardContent className="p-0">
-                    {/* Email Header */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <Avatar className="w-12 h-12">
-                            <AvatarFallback className="bg-blue-100 text-blue-600">
-                              {(email.candidateName || "Unknown").split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {email.subject}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              To: <span className="font-medium">{email.candidateName || "Unknown Candidate"}</span>
-                            </p>
+              (emails?.length ? emails : mockEmails).map((email, index) => {
+                const emailId = email.id || `mock-${index}`;
+                const isExpanded = expandedEmails.has(emailId);
+                
+                return (
+                  <Card key={emailId} className="overflow-hidden">
+                    <CardContent className="p-0">
+                      {/* Email Header */}
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <Avatar className="w-12 h-12">
+                              <AvatarFallback className="bg-blue-100 text-blue-600">
+                                {((email as any).candidateName || "Unknown").split(' ').map((n: string) => n[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900">
+                                {email.subject}
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                To: <span className="font-medium">{(email as any).candidateName || "Unknown Candidate"}</span>
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            {getStatusBadge(email.status)}
+                            {getTypeBadge((email as any).type || email.emailType)}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleEmailExpansion(emailId)}
+                              className="ml-2"
+                            >
+                              {isExpanded ? "Show Less" : "Show More"}
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-3">
-                          {getStatusBadge(email.status)}
-                          {getTypeBadge(email.type)}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Email Details */}
-                    <div className="px-6 py-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div>
-                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Recipient Email</label>
-                          <p className="text-sm font-medium text-gray-900 mt-1">
-                            {email.candidateEmail || "candidate@email.com"}
-                          </p>
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Sent Date</label>
-                          <p className="text-sm font-medium text-gray-900 mt-1">
-                            {email.sentAt || "Just now"}
-                          </p>
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email Type</label>
-                          <p className="text-sm font-medium text-gray-900 mt-1">
-                            {email.type?.charAt(0).toUpperCase() + email.type?.slice(1) || "General"}
-                          </p>
-                        </div>
                       </div>
 
-                      {/* Email Content */}
-                      <div>
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email Content</label>
-                        <div className="mt-2 p-4 bg-gray-50 rounded-lg border">
-                          <div 
-                            className="text-sm text-gray-700 whitespace-pre-wrap"
-                            dangerouslySetInnerHTML={{ 
-                              __html: email.content?.replace(/\n/g, '<br>') || "No content available" 
-                            }}
-                          />
-                        </div>
-                      </div>
+                      {/* Email Details - Only show when expanded */}
+                      {isExpanded && (
+                        <div className="px-6 py-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div>
+                              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Recipient Email</label>
+                              <p className="text-sm font-medium text-gray-900 mt-1">
+                                {(email as any).candidateEmail || "candidate@email.com"}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Sent Date</label>
+                              <p className="text-sm font-medium text-gray-900 mt-1">
+                                {email.sentAt || "Just now"}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email Type</label>
+                              <p className="text-sm font-medium text-gray-900 mt-1">
+                                {((email as any).type || email.emailType)?.charAt(0).toUpperCase() + ((email as any).type || email.emailType)?.slice(1) || "General"}
+                              </p>
+                            </div>
+                          </div>
 
-                      {/* Email Footer */}
-                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-                        <div className="flex items-center space-x-4">
-                          <span className="text-xs text-gray-500">
-                            Email ID: {email.id || `mock-${index}`}
-                          </span>
-                          {email.candidateId && (
-                            <span className="text-xs text-gray-500">
-                              Candidate ID: {email.candidateId}
-                            </span>
-                          )}
+                          {/* Email Content */}
+                          <div>
+                            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email Content</label>
+                            <div className="mt-2 p-4 bg-gray-50 rounded-lg border">
+                              <div 
+                                className="text-sm text-gray-700 whitespace-pre-wrap"
+                                dangerouslySetInnerHTML={{ 
+                                  __html: email.content?.replace(/\n/g, '<br>') || "No content available" 
+                                }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Email Footer */}
+                          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+                            <div className="flex items-center space-x-4">
+                              <span className="text-xs text-gray-500">
+                                Email ID: {emailId}
+                              </span>
+                              {email.candidateId && (
+                                <span className="text-xs text-gray-500">
+                                  Candidate ID: {email.candidateId}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  // Copy email content to clipboard
+                                  navigator.clipboard.writeText(email.content || "");
+                                  toast({
+                                    title: "Copied",
+                                    description: "Email content copied to clipboard",
+                                  });
+                                }}
+                              >
+                                Copy Content
+                              </Button>
+                              {(email as any).candidateEmail && (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => {
+                                    // Open email client with pre-filled data
+                                    window.location.href = `mailto:${(email as any).candidateEmail}?subject=Re: ${email.subject}`;
+                                  }}
+                                >
+                                  Reply
+                                </Button>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              // Copy email content to clipboard
-                              navigator.clipboard.writeText(email.content || "");
-                              toast({
-                                title: "Copied",
-                                description: "Email content copied to clipboard",
-                              });
-                            }}
-                          >
-                            Copy Content
-                          </Button>
-                          {email.candidateEmail && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => {
-                                // Open email client with pre-filled data
-                                window.location.href = `mailto:${email.candidateEmail}?subject=Re: ${email.subject}`;
-                              }}
-                            >
-                              Reply
-                            </Button>
-                          )}
+                      )}
+
+                      {/* Collapsed view - Brief summary */}
+                      {!isExpanded && (
+                        <div className="px-6 py-3 bg-gray-50">
+                          <p className="text-sm text-gray-600">
+                            Sent to: <span className="font-medium">{(email as any).candidateEmail || "candidate@email.com"}</span> • {email.sentAt || "Just now"}
+                          </p>
+                          <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                            {email.content?.substring(0, 150) || "No content available"}
+                            {email.content && email.content.length > 150 && "..."}
+                          </p>
                         </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })
             )}
           </div>
         </div>
