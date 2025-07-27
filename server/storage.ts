@@ -182,6 +182,7 @@ export class DatabaseStorage implements IStorage {
         position: candidates.position,
         cvFileName: candidates.cvFileName,
         cvFilePath: candidates.cvFilePath,
+        resumeSummary: candidates.resumeSummary,
         status: candidates.status,
         appliedAt: candidates.appliedAt,
         updatedAt: candidates.updatedAt,

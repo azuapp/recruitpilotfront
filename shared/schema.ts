@@ -50,6 +50,7 @@ export const candidates = pgTable("candidates", {
   position: varchar("position").notNull(),
   cvFileName: varchar("cv_file_name"),
   cvFilePath: varchar("cv_file_path"),
+  resumeSummary: text("resume_summary"), // Extracted text content from PDF
   status: varchar("status").notNull().default("new"), // new, reviewed, interview, hired, rejected
   appliedAt: timestamp("applied_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

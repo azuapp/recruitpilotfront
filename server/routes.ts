@@ -5,6 +5,7 @@ import { setupAuth, isAuthenticated, isAdmin } from "./auth";
 import { upload } from "./services/fileUpload";
 import { analyzeResume } from "./services/openai";
 import { sendEmail, getApplicationConfirmationEmail, getInterviewInvitationEmail } from "./services/email";
+import { extractTextFromPDF, validatePDFContent } from "./services/pdfExtractor";
 import { insertCandidateSchema, insertInterviewSchema, insertEmailSchema, insertJobDescriptionSchema, insertJobFitScoreSchema } from "@shared/schema";
 import { calculateJobFitScore } from "./services/jobFitService";
 import { z } from "zod";
@@ -157,7 +158,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cvFilePath: req.file?.path,
       });
 
-      const candidate = await storage.createCandidate(candidateData);
+      // Extract text from PDF if file was uploaded
+      let resumeSummary = null;
+      if (req.file?.path) {
+        try {
+          resumeSummary = await extractTextFromPDF(req.file.path);
+          console.log(`Extracted ${resumeSummary.length} characters from PDF for ${candidateData.fullName}`);
+        } catch (error) {
+          console.error('Failed to extract PDF text:', error);
+          // Continue with application even if PDF extraction fails
+        }
+      }
+
+      // Add resume summary to candidate data
+      const candidateWithResume = {
+        ...candidateData,
+        resumeSummary
+      };
+
+      const candidate = await storage.createCandidate(candidateWithResume);
 
       // Send confirmation email
       try {
@@ -191,7 +210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
 
           // Process assessment asynchronously (don't await)
-          processAssessment(candidate.id, assessment.id, req.file.path, candidate.position)
+          processAssessment(candidate.id, assessment.id, candidate.position, resumeSummary)
             .catch(error => console.error('Assessment processing failed:', error));
         } catch (error) {
           console.error('Failed to create assessment:', error);
@@ -621,18 +640,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 async function processAssessment(
   candidateId: string, 
   assessmentId: string, 
-  cvFilePath: string, 
-  position: string
+  position: string,
+  resumeSummary: string | null
 ) {
   try {
-    // Read CV file content (assuming it's text or extracted text)
-    // In a real implementation, you'd use a PDF parser like pdf-parse
-    const cvContent = await fs.promises.readFile(cvFilePath, 'utf-8').catch(() => {
-      // If reading as text fails, assume it's a PDF and return placeholder
-      return `Resume for ${position} position. CV file: ${path.basename(cvFilePath)}`;
-    });
+    // Use extracted resume text instead of reading file
+    if (!resumeSummary) {
+      throw new Error('No resume text available for analysis');
+    }
 
-    const analysis = await analyzeResume(cvContent, position);
+    console.log(`Processing assessment for candidate ${candidateId} with ${resumeSummary.length} characters of resume text`);
+    const analysis = await analyzeResume(resumeSummary, position);
 
     await storage.updateAssessment(assessmentId, {
       overallScore: analysis.overallScore.toString(),
