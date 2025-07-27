@@ -231,7 +231,7 @@ export default function Candidates() {
     <div className={`flex min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`}>
       <Sidebar />
       
-      <main className="flex-1 lg:ml-0 min-h-screen">
+      <main className="flex-1 lg:ml-64 min-h-screen">
         {/* Header */}
         <header className="bg-white shadow-sm border-b border-gray-200 p-4 sm:p-6 mt-16 lg:mt-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">

@@ -56,7 +56,7 @@ type EditUserFormData = z.infer<typeof editUserSchema>;
 export default function Users() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [search, setSearch] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -271,12 +271,12 @@ export default function Users() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className={`flex min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`}>
       <Sidebar />
       
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 lg:ml-64 min-h-screen">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 p-6">
+        <header className="bg-white shadow-sm border-b border-gray-200 p-4 sm:p-6 mt-16 lg:mt-0">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{t('userManagement')}</h1>
@@ -525,7 +525,7 @@ export default function Users() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </main>
 
       {/* Edit User Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

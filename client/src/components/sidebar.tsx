@@ -74,14 +74,19 @@ export default function Sidebar() {
   // Check if device is mobile
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024); // lg breakpoint
+      const mobile = window.innerWidth < 1024; // lg breakpoint
+      setIsMobile(mobile);
+      // Force close mobile menu if switching to desktop
+      if (!mobile && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
     };
     
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
     return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  }, [isMobileMenuOpen]);
 
   // Auto-close mobile menu when route changes
   useEffect(() => {
@@ -152,15 +157,18 @@ export default function Sidebar() {
       <nav
         data-sidebar="mobile-sidebar"
         className={cn(
-          "fixed lg:relative transition-all duration-300 ease-in-out bg-white shadow-lg z-40 h-screen overflow-y-auto",
-          // Mobile: slide in/out + collapse
+          "transition-all duration-300 ease-in-out bg-white shadow-lg h-screen overflow-y-auto",
+          // Mobile: fixed position with slide animation
           isMobile ? (
-            isMobileMenuOpen 
-              ? "translate-x-0 w-64" 
-              : "-translate-x-full w-0"
+            cn(
+              "fixed z-40",
+              isMobileMenuOpen 
+                ? "translate-x-0 w-64" 
+                : "-translate-x-full w-64"
+            )
           ) : (
-            // Desktop: always visible, full width
-            "translate-x-0 w-64"
+            // Desktop: fixed position, always visible
+            "fixed lg:relative translate-x-0 w-64 z-30"
           )
         )}
       >
