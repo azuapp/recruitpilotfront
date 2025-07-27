@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import Sidebar from "@/components/sidebar";
@@ -31,6 +32,7 @@ interface Assessment {
 export default function Assessments() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
+  const { t, isRTL } = useLanguage();
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -95,16 +97,16 @@ export default function Assessments() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className={`flex min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`}>
       <Sidebar />
       
       <main className="flex-1 lg:ml-64">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 p-6">
+        <header className="bg-white shadow-sm border-b border-gray-200 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">AI Assessments</h2>
-              <p className="text-gray-600 mt-1">AI-powered resume analysis and candidate scoring</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{t("aiAssessmentsPage")}</h2>
+              <p className="text-gray-600 mt-1 text-sm sm:text-base">{t("aiPoweredResumeAnalysis")}</p>
             </div>
             <div className="flex space-x-3">
               <Button>
@@ -122,7 +124,7 @@ export default function Assessments() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Assessments</p>
+                    <p className="text-sm font-medium text-gray-600">{t("totalAssessments")}</p>
                     <p className="text-3xl font-bold text-gray-900 mt-2">
                       {assessmentsLoading ? "..." : assessments?.length || mockAssessments.length}
                     </p>
@@ -138,7 +140,7 @@ export default function Assessments() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Average Score</p>
+                    <p className="text-sm font-medium text-gray-600">{t("averageScore")}</p>
                     <p className="text-3xl font-bold text-gray-900 mt-2">82%</p>
                   </div>
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -152,7 +154,7 @@ export default function Assessments() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Processing</p>
+                    <p className="text-sm font-medium text-gray-600">{t("processing")}</p>
                     <p className="text-3xl font-bold text-gray-900 mt-2">0</p>
                   </div>
                   <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
@@ -166,7 +168,7 @@ export default function Assessments() {
           {/* Assessment Results */}
           <Card>
             <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Assessment Results</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">{t("assessmentResults")}</h3>
               <div className="divide-y divide-gray-200">
                 {assessmentsLoading ? (
                   <div className="p-6 text-center text-gray-500">

@@ -60,6 +60,12 @@ const translations = {
     manageYourCalendar: "Manage your calendar",
     manageReviewApplications: "Manage and review job applications",
     trackEmailCommunications: "Track all email communications",
+    aiAssessmentsPage: "AI Assessments",
+    aiPoweredResumeAnalysis: "AI-powered resume analysis and candidate scoring",
+    totalAssessments: "Total Assessments",
+    averageScore: "Average Score",
+    processing: "Processing",
+    assessmentResults: "Assessment Results",
     
     // Candidates
     exportCandidates: "Export Candidates",
@@ -173,6 +179,12 @@ const translations = {
     manageYourCalendar: "إدارة التقويم الخاص بك",
     manageReviewApplications: "إدارة ومراجعة طلبات الوظائف",
     trackEmailCommunications: "تتبع جميع الاتصالات عبر البريد الإلكتروني",
+    aiAssessmentsPage: "تقييمات الذكاء الاصطناعي",
+    aiPoweredResumeAnalysis: "تحليل السير الذاتية بالذكاء الاصطناعي وتقييم المرشحين",
+    totalAssessments: "إجمالي التقييمات",
+    averageScore: "متوسط النتيجة",
+    processing: "قيد المعالجة",
+    assessmentResults: "نتائج التقييم",
     
     // Candidates
     exportCandidates: "تصدير المرشحين",
