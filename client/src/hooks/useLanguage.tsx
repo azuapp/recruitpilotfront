@@ -59,6 +59,7 @@ const translations = {
     interviewsScheduledActivity: "Interviews scheduled",
     manageYourCalendar: "Manage your calendar",
     manageReviewApplications: "Manage and review job applications",
+    trackEmailCommunications: "Track all email communications",
     
     // Candidates
     exportCandidates: "Export Candidates",
@@ -171,6 +172,7 @@ const translations = {
     interviewsScheduledActivity: "تم جدولة المقابلات",
     manageYourCalendar: "إدارة التقويم الخاص بك",
     manageReviewApplications: "إدارة ومراجعة طلبات الوظائف",
+    trackEmailCommunications: "تتبع جميع الاتصالات عبر البريد الإلكتروني",
     
     // Candidates
     exportCandidates: "تصدير المرشحين",
