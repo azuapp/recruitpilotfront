@@ -61,8 +61,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   app.post('/api/send-email', asyncHandler(async (req, res) => {
-    // Email sending functionality would go here
-    res.json({ message: 'Email sent successfully' });
+    const { to, subject, body } = req.body;
+    
+    if (!to || !subject || !body) {
+      return res.status(400).json({ message: 'Missing required fields: to, subject, body' });
+    }
+
+    const { sendEmail } = await import('../services/email');
+    
+    const success = await sendEmail({
+      to,
+      subject,
+      html: body.replace(/\n/g, '<br>'),
+    });
+    
+    if (success) {
+      res.json({ message: 'Email sent successfully' });
+    } else {
+      res.status(500).json({ message: 'Failed to send email' });
+    }
   }));
 
   // Job descriptions endpoints

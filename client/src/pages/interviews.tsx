@@ -260,22 +260,56 @@ export default function Interviews() {
 
     try {
       const interviewDate = new Date(interview.scheduledDate);
+      const formattedDate = interviewDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      const formattedTime = interviewDate.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+
       const emailData = {
         to: candidate.email,
-        subject: `Interview Scheduled - ${candidate.position}`,
-        body: `Dear ${candidate.fullName},
-
-Your interview has been scheduled for:
-Date: ${interviewDate.toLocaleDateString()}
-Time: ${interviewDate.toLocaleTimeString()}
-Type: ${interview.interviewType.charAt(0).toUpperCase() + interview.interviewType.slice(1)}
-
-${interview.notes ? `Notes: ${interview.notes}` : ''}
-
-We look forward to speaking with you.
-
-Best regards,
-Recruitment Team`
+        subject: `Interview Invitation - ${candidate.position} Position`,
+        body: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+          <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h2 style="color: #2563eb; margin-bottom: 20px; text-align: center;">Interview Invitation</h2>
+            
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">Dear <strong>${candidate.fullName}</strong>,</p>
+            
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+              We are pleased to invite you for an interview for the <strong>${candidate.position}</strong> position at our company.
+            </p>
+            
+            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #1f2937; margin-bottom: 15px;">Interview Details:</h3>
+              <p style="margin: 8px 0; color: #374151;"><strong>📅 Date:</strong> ${formattedDate}</p>
+              <p style="margin: 8px 0; color: #374151;"><strong>🕒 Time:</strong> ${formattedTime}</p>
+              <p style="margin: 8px 0; color: #374151;"><strong>💻 Type:</strong> ${interview.interviewType.charAt(0).toUpperCase() + interview.interviewType.slice(1)} Interview</p>
+              ${interview.notes ? `<p style="margin: 8px 0; color: #374151;"><strong>📝 Notes:</strong> ${interview.notes}</p>` : ''}
+            </div>
+            
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+              Please confirm your availability by replying to this email. If you need to reschedule, please let us know as soon as possible.
+            </p>
+            
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+              We look forward to speaking with you and learning more about your qualifications.
+            </p>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 14px; margin: 0;">
+                Best regards,<br>
+                <strong>The Recruitment Team</strong><br>
+                RecruitPro
+              </p>
+            </div>
+          </div>
+        </div>`
       };
 
       const res = await apiRequest("POST", "/api/send-email", emailData);
