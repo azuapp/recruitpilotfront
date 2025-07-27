@@ -231,9 +231,9 @@ export default function Candidates() {
     <div className={`flex min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`}>
       <Sidebar />
       
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-64 min-h-screen">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 p-4 sm:p-6">
+        <header className="bg-white shadow-sm border-b border-gray-200 p-4 sm:p-6 lg:ml-0 ml-0 mt-16 lg:mt-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{t("candidates")}</h2>
@@ -309,7 +309,7 @@ export default function Candidates() {
           <Card>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[640px]">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-3 sm:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -365,12 +365,12 @@ export default function Candidates() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
                             <div className="text-sm text-gray-900">
                               {candidate.position.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
                             <div className="text-sm text-gray-900">
                               {new Date(candidate.appliedAt).toLocaleDateString()}
                             </div>
@@ -381,7 +381,7 @@ export default function Candidates() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             {getStatusBadge(candidate.status)}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
                             {candidate.assessment ? (
                               <div className="flex items-center">
                                 <div className="text-sm font-medium text-gray-900">
