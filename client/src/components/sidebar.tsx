@@ -105,7 +105,7 @@ export default function Sidebar() {
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <Users className="text-white text-lg" />
+              <UsersIcon className="text-white text-lg" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-900">RecruitPro</h1>
@@ -149,7 +149,7 @@ export default function Sidebar() {
         <div className="absolute bottom-0 w-full p-4 border-t border-gray-200 bg-white">
           <div className="flex items-center space-x-3">
             <Avatar className="w-10 h-10">
-              <AvatarImage src={user?.profileImageUrl} alt={user?.firstName || "Admin"} />
+              <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.firstName || "Admin"} />
               <AvatarFallback>
                 {user?.firstName?.[0] || "A"}{user?.lastName?.[0] || "U"}
               </AvatarFallback>
