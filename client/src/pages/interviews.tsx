@@ -166,30 +166,31 @@ export default function Interviews() {
     return <div>Loading...</div>;
   }
 
-  // Mock data for today's interviews
-  const todaysInterviews = [
-    {
-      candidateName: "Michael Johnson",
-      position: "Frontend Developer",
-      time: "10:00 AM",
-      type: "Video Call",
-      borderColor: "border-blue-500"
-    },
-    {
-      candidateName: "Sarah Chen",
-      position: "UX Designer",
-      time: "2:30 PM",
-      type: "In-person",
-      borderColor: "border-amber-500"
-    },
-    {
-      candidateName: "David Rodriguez",
-      position: "Data Scientist",
-      time: "4:00 PM",
-      type: "Phone Call",
-      borderColor: "border-green-500"
-    }
-  ];
+  // Filter interviews for today
+  const today = new Date();
+  const todayString = today.toDateString();
+  
+  const todaysInterviews = interviews?.filter(interview => {
+    const interviewDate = new Date(interview.scheduledDate);
+    return interviewDate.toDateString() === todayString;
+  }).map(interview => {
+    const candidate = candidates?.find(c => c.id === interview.candidateId);
+    const interviewDate = new Date(interview.scheduledDate);
+    
+    const borderColorMap = {
+      'video': 'border-blue-500',
+      'phone': 'border-green-500',
+      'in-person': 'border-amber-500'
+    };
+    
+    return {
+      candidateName: candidate?.fullName || 'Unknown Candidate',
+      position: candidate?.position || 'N/A',
+      time: interviewDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      type: interview.interviewType.charAt(0).toUpperCase() + interview.interviewType.slice(1).replace('-', ' '),
+      borderColor: borderColorMap[interview.interviewType as keyof typeof borderColorMap] || 'border-blue-500'
+    };
+  }) || [];
 
   return (
     <div className={`flex min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`}>
@@ -404,16 +405,24 @@ export default function Interviews() {
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Today's Interviews</h3>
                 <div className="space-y-4">
-                  {todaysInterviews.map((interview, index) => (
-                    <div key={index} className={`border-l-4 ${interview.borderColor} pl-4 py-2`}>
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-gray-900">{interview.candidateName}</h4>
-                        <span className="text-sm text-gray-500">{interview.time}</span>
+                  {todaysInterviews.length > 0 ? (
+                    todaysInterviews.map((interview, index) => (
+                      <div key={index} className={`border-l-4 ${interview.borderColor} pl-4 py-2`}>
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-gray-900">{interview.candidateName}</h4>
+                          <span className="text-sm text-gray-500">{interview.time}</span>
+                        </div>
+                        <p className="text-sm text-gray-600">{interview.position}</p>
+                        <p className="text-xs text-gray-500 mt-1">{interview.type}</p>
                       </div>
-                      <p className="text-sm text-gray-600">{interview.position}</p>
-                      <p className="text-xs text-gray-500 mt-1">{interview.type}</p>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <CalendarPlus className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p className="text-sm">No interviews scheduled for today</p>
+                      <p className="text-xs mt-1">Schedule new interviews to see them here</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>
