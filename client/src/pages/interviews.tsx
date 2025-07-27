@@ -457,58 +457,76 @@ export default function Interviews() {
                     ) : interviews?.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                          No interviews scheduled. Schedule interviews from the candidates page.
+                          No interviews scheduled.
                         </td>
                       </tr>
                     ) : (
-                      // Mock interview data since we don't have real data yet
-                      todaysInterviews.map((interview, index) => (
-                        <tr key={index}>
+                      // Display real interview data
+                      interviews?.map((interview) => {
+                        const candidate = candidates?.find(c => c.id === interview.candidateId);
+                        return (
+                        <tr key={interview.id}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center space-x-3">
                               <Avatar>
                                 <AvatarFallback>
-                                  {interview.candidateName.split(' ').map(n => n[0]).join('')}
+                                  {candidate?.fullName ? candidate.fullName.split(' ').map((n: string) => n[0]).join('') : 'NA'}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
                                 <div className="text-sm font-medium text-gray-900">
-                                  {interview.candidateName}
+                                  {candidate?.fullName || 'Unknown Candidate'}
                                 </div>
                                 <div className="text-sm text-gray-500">
-                                  candidate@email.com
+                                  {candidate?.email || 'No email'}
                                 </div>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {interview.position}
+                            {candidate?.position || 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">Dec 15, 2024</div>
-                            <div className="text-sm text-gray-500">{interview.time}</div>
+                            <div className="text-sm text-gray-900">{new Date(interview.scheduledDate).toLocaleDateString()}</div>
+                            <div className="text-sm text-gray-500">{new Date(interview.scheduledDate).toLocaleTimeString()}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {interview.type}
+                            {interview.interviewType}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            {getStatusBadge("scheduled")}
+                            {getStatusBadge(interview.status)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex space-x-2">
-                              <Button variant="ghost" size="sm">
-                                {getTypeIcon("video")}
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => toast({ title: "Join Interview", description: "Interview link functionality coming soon!" })}
+                                title="Join Interview"
+                              >
+                                {getTypeIcon(interview.interviewType)}
                               </Button>
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => toast({ title: "Edit Interview", description: "Edit functionality coming soon!" })}
+                                title="Edit Interview"
+                              >
                                 <Edit className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => toast({ title: "Send Email", description: "Email functionality coming soon!" })}
+                                title="Send Email"
+                              >
                                 <Mail className="w-4 h-4" />
                               </Button>
                             </div>
                           </td>
                         </tr>
-                      ))
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
