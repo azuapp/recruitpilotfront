@@ -116,12 +116,12 @@ export default function Sidebar() {
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
               <UsersIcon className="text-white text-lg" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">{t("recruitPro")}</h1>
-              <p className="text-sm text-gray-500">{t("aiRecruitment")}</p>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-bold text-gray-900 truncate">{t("recruitPro")}</h1>
+              <p className="text-sm text-gray-500 truncate">{t("aiRecruitment")}</p>
             </div>
           </div>
           <div className="mt-4 flex justify-center">
@@ -141,7 +141,7 @@ export default function Sidebar() {
                   key={item.name} 
                   href={item.href}
                   className={cn(
-                    "flex items-center space-x-3 px-4 py-4 rounded-lg transition-all duration-200 cursor-pointer block touch-manipulation",
+                    "flex items-center space-x-3 px-4 py-4 rounded-lg transition-all duration-200 cursor-pointer touch-manipulation",
                     "min-h-[48px] text-base lg:text-sm", // Improved touch targets for mobile
                     isActive
                       ? "bg-blue-50 text-primary font-medium shadow-sm"
@@ -150,7 +150,7 @@ export default function Sidebar() {
                   onClick={closeMobileMenu}
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />
-                  <span className="truncate">
+                  <span className="truncate flex-1">
                     {item.name}
                   </span>
                 </Link>
@@ -162,26 +162,26 @@ export default function Sidebar() {
         {/* User Profile */}
         <div className="absolute bottom-0 w-full p-4 border-t border-gray-200 bg-white">
           <div className="flex items-center space-x-3">
-            <Avatar className="w-10 h-10">
+            <Avatar className="w-10 h-10 flex-shrink-0">
               <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.firstName || "Admin"} />
               <AvatarFallback>
                 {user?.firstName?.[0] || "A"}{user?.lastName?.[0] || "U"}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">
                 {user?.firstName && user?.lastName 
                   ? `${user.firstName} ${user.lastName}`
                   : user?.email?.split('@')[0] || "Admin User"
                 }
               </p>
-              <p className="text-xs text-gray-500">{t("hrManager")}</p>
+              <p className="text-xs text-gray-500 truncate">{t("hrManager")}</p>
             </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => logoutMutation.mutate()}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 flex-shrink-0"
             >
               <LogOut className="w-4 h-4" />
             </Button>
