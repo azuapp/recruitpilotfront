@@ -385,14 +385,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/interviews', isAuthenticated, async (req, res) => {
     try {
-      // Parse and convert scheduledDate to proper Date object
-      const rawData = req.body;
-      const interviewData = {
-        ...rawData,
-        scheduledDate: new Date(rawData.scheduledDate)
-      };
+      console.log('Raw interview data:', req.body);
       
-      const validatedData = insertInterviewSchema.parse(interviewData);
+      // Let the schema handle date conversion
+      const validatedData = insertInterviewSchema.parse(req.body);
+      console.log('Validated data:', validatedData);
+      
       const interview = await storage.createInterview(validatedData);
       
       // Send interview invitation email
