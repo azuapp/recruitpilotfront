@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { apiRequest } from "@/lib/queryClient";
 import Sidebar from "@/components/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,8 @@ import {
   Phone,
   Globe,
   FileText,
-  Calendar
+  Calendar,
+  Edit3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +59,7 @@ export default function Candidates() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
   const { t, isRTL } = useLanguage();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [positionFilter, setPositionFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -122,6 +125,43 @@ export default function Candidates() {
     queryKey: ["/api/candidates"],
     retry: false,
   });
+
+  // Status update mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ candidateId, status }: { candidateId: string; status: string }) => {
+      const response = await apiRequest("PATCH", `/api/candidates/${candidateId}/status`, { status });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+      toast({
+        title: "Status Updated",
+        description: "Candidate status updated successfully",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Update Failed",
+        description: "Failed to update candidate status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleStatusUpdate = (candidateId: string, newStatus: string) => {
+    updateStatusMutation.mutate({ candidateId, status: newStatus });
+  };
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
@@ -420,6 +460,42 @@ export default function Candidates() {
                               >
                                 <Download className="w-4 h-4" />
                               </Button>
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    title="Update Status"
+                                  >
+                                    <Edit3 className="w-4 h-4" />
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-md">
+                                  <DialogHeader>
+                                    <DialogTitle>Update Status - {candidate.fullName}</DialogTitle>
+                                    <DialogDescription>
+                                      Change the candidate's application status
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <div className="space-y-4">
+                                    <div>
+                                      <Label htmlFor="status-select">Current Status: {candidate.status}</Label>
+                                      <Select onValueChange={(value) => handleStatusUpdate(candidate.id, value)}>
+                                        <SelectTrigger className="mt-2">
+                                          <SelectValue placeholder="Select new status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="new">New</SelectItem>
+                                          <SelectItem value="reviewed">Reviewed</SelectItem>
+                                          <SelectItem value="interview">Interview</SelectItem>
+                                          <SelectItem value="hired">Hired</SelectItem>
+                                          <SelectItem value="rejected">Rejected</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
                               <Dialog>
                                 <DialogTrigger asChild>
                                   <Button 
