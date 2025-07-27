@@ -297,23 +297,8 @@ Recruitment Team`
   const updateInterviewMutation = useMutation({
     mutationFn: async (data: typeof interviewForm & { id: string }) => {
       try {
-        console.log('Making PUT request to:', `/api/interviews/${data.id}`, 'with data:', data);
         const res = await apiRequest("PUT", `/api/interviews/${data.id}`, data);
-        
-        console.log('Response status:', res.status);
-        console.log('Response headers:', Object.fromEntries(res.headers.entries()));
-        
-        // Check if response is HTML (error page) instead of JSON
-        const contentType = res.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          const text = await res.text();
-          console.error('Server returned HTML instead of JSON:', text.substring(0, 200));
-          throw new Error('Server error: Expected JSON response but got HTML');
-        }
-        
-        const result = await res.json();
-        console.log('Update result:', result);
-        return result;
+        return await res.json();
       } catch (error) {
         console.error('Error in interview update mutation:', error);
         throw error;

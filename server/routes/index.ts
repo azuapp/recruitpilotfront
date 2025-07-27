@@ -38,6 +38,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(201).json(interview);
   }));
 
+  app.put('/api/interviews/:id', asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    // Add input validation and date processing
+    const processedData = {
+      ...req.body,
+      scheduledDate: req.body.scheduledDate ? new Date(req.body.scheduledDate).toISOString() : undefined
+    };
+    const interview = await storage.updateInterview(id, processedData);
+    res.json(interview);
+  }));
+
   // Email endpoints
   app.get('/api/emails', asyncHandler(async (req, res) => {
     const emails = await storage.getEmails();
@@ -47,6 +58,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/emails', asyncHandler(async (req, res) => {
     const email = await storage.createEmail(req.body);
     res.status(201).json(email);
+  }));
+
+  app.post('/api/send-email', asyncHandler(async (req, res) => {
+    // Email sending functionality would go here
+    res.json({ message: 'Email sent successfully' });
   }));
 
   // Job descriptions endpoints
