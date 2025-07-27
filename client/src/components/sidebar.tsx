@@ -165,7 +165,10 @@ export default function Sidebar() {
   return (
     <>
       {/* Mobile Menu Button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+      <div className={cn(
+        "lg:hidden fixed top-4 z-50",
+        isRTL ? "right-4" : "left-4"
+      )}>
         <Button
           data-sidebar="mobile-button"
           variant="outline"
@@ -194,15 +197,23 @@ export default function Sidebar() {
       )}
 
       {/* Desktop Sidebar - Always visible on large screens */}
-      <nav className="hidden lg:block fixed left-0 top-0 w-64 h-screen bg-white shadow-lg z-30 overflow-y-auto">
+      <nav className={cn(
+        "hidden lg:block fixed top-0 w-64 h-screen bg-white shadow-lg z-30 overflow-y-auto",
+        isRTL ? "right-0" : "left-0"
+      )}>
         {renderSidebarContent()}
       </nav>
 
       {/* Mobile Sidebar - Slide overlay */}
       <nav
         className={cn(
-          "lg:hidden fixed left-0 top-0 w-64 h-screen bg-white shadow-lg z-40 overflow-y-auto transition-transform duration-300 ease-in-out",
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          "lg:hidden fixed top-0 w-64 h-screen bg-white shadow-lg z-40 overflow-y-auto transition-transform duration-300 ease-in-out",
+          isRTL ? "right-0" : "left-0",
+          isMobileMenuOpen 
+            ? "translate-x-0" 
+            : isRTL 
+              ? "translate-x-full" 
+              : "-translate-x-full"
         )}
       >
         {renderSidebarContent()}

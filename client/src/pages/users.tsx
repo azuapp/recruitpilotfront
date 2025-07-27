@@ -28,6 +28,7 @@ import {
   Clock,
   Search
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface AdminUser {
   id: string;
@@ -274,7 +275,10 @@ export default function Users() {
     <div className={`flex min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`}>
       <Sidebar />
       
-      <main className="flex-1 lg:ml-64 min-h-screen">
+      <main className={cn(
+        "flex-1 min-h-screen",
+        isRTL ? "lg:mr-64" : "lg:ml-64"
+      )}>
         {/* Header */}
         <header className="bg-white shadow-sm border-b border-gray-200 p-4 sm:p-6 mt-16 lg:mt-0">
           <div className="flex justify-between items-center">

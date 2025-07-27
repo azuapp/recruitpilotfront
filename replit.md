@@ -14,7 +14,8 @@ Preferred communication style: Simple, everyday language.
 - **Layout Consistency**: Fixed sidebar disappearing issue on candidates and emails pages
 - **Desktop Sidebar**: Implemented reliable fixed positioning with `hidden lg:block` for consistent visibility
 - **Mobile Sidebar**: Enhanced slide-in overlay with proper z-index layering and smooth transitions
-- **Responsive Design**: Standardized `lg:ml-64` spacing across all admin pages (home, candidates, emails, interviews, assessments, job-descriptions, users)
+- **RTL Support**: Sidebar positions on right for Arabic (lg:mr-64), left for English (lg:ml-64)
+- **Language-Aware Layout**: Conditional positioning based on language direction with proper RTL/LTR support
 - **Mobile Experience**: Improved touch targets and auto-close functionality for mobile navigation
 - **Cross-page Compatibility**: Unified sidebar behavior across entire admin dashboard
 
