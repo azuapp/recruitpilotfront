@@ -74,7 +74,7 @@ export const assessments = pgTable("assessments", {
 export const interviews = pgTable("interviews", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   candidateId: varchar("candidate_id").notNull().references(() => candidates.id, { onDelete: 'cascade' }),
-  scheduledDate: timestamp("scheduled_date").notNull(),
+  scheduledDate: timestamp("scheduled_date", { mode: 'string' }).notNull(),
   interviewType: varchar("interview_type").notNull(), // video, phone, in-person
   status: varchar("status").notNull().default("scheduled"), // scheduled, completed, cancelled, rescheduled
   notes: text("notes"),
