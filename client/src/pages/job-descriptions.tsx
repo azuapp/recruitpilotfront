@@ -245,77 +245,77 @@ export default function JobDescriptions() {
         <header className="bg-white shadow-sm border-b border-gray-200 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Job Descriptions</h2>
-              <p className="text-gray-600 mt-1 text-sm sm:text-base">Manage job requirements for AI-powered candidate scoring</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{t('jobDescriptions')}</h2>
+              <p className="text-gray-600 mt-1 text-sm sm:text-base">{t('manageJobRequirements')}</p>
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button onClick={() => { setEditingJobDescription(null); resetForm(); }}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Job Description
+                  {t('addJobDescription')}
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
-                    {editingJobDescription ? "Edit Job Description" : "Add New Job Description"}
+                    {editingJobDescription ? t('editJobDescription') : t('addNewJobDescription')}
                   </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <Label htmlFor="position">Position Title *</Label>
+                    <Label htmlFor="position">{t('positionTitle')} *</Label>
                     <Input
                       id="position"
                       value={formData.position}
                       onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                      placeholder="e.g., Frontend Developer, Data Scientist"
+                      placeholder={t('positionPlaceholder')}
                       required
                     />
                   </div>
                   
                   <div>
-                    <Label htmlFor="responsibilities">Key Responsibilities *</Label>
+                    <Label htmlFor="responsibilities">{t('keyResponsibilities')} *</Label>
                     <Textarea
                       id="responsibilities"
                       value={formData.responsibilities}
                       onChange={(e) => setFormData({ ...formData, responsibilities: e.target.value })}
-                      placeholder="Describe the main responsibilities and duties for this role..."
+                      placeholder={t('responsibilitiesPlaceholder')}
                       rows={4}
                       required
                     />
                   </div>
                   
                   <div>
-                    <Label htmlFor="requiredExperience">Required Experience *</Label>
+                    <Label htmlFor="requiredExperience">{t('requiredExperience')} *</Label>
                     <Textarea
                       id="requiredExperience"
                       value={formData.requiredExperience}
                       onChange={(e) => setFormData({ ...formData, requiredExperience: e.target.value })}
-                      placeholder="Specify years of experience, industry background, specific technologies..."
+                      placeholder={t('experiencePlaceholder')}
                       rows={3}
                       required
                     />
                   </div>
                   
                   <div>
-                    <Label htmlFor="skills">Required Skills *</Label>
+                    <Label htmlFor="skills">{t('requiredSkills')} *</Label>
                     <Textarea
                       id="skills"
                       value={formData.skills}
                       onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
-                      placeholder="List technical skills, soft skills, certifications, tools..."
+                      placeholder={t('skillsPlaceholder')}
                       rows={4}
                       required
                     />
                   </div>
                   
                   <div>
-                    <Label htmlFor="notes">Additional Notes</Label>
+                    <Label htmlFor="notes">{t('additionalNotes')}</Label>
                     <Textarea
                       id="notes"
                       value={formData.notes}
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      placeholder="Company culture, benefits, remote work policy, etc."
+                      placeholder={t('notesPlaceholder')}
                       rows={3}
                     />
                   </div>
@@ -330,13 +330,13 @@ export default function JobDescriptions() {
                         resetForm();
                       }}
                     >
-                      Cancel
+                      {t('cancel')}
                     </Button>
                     <Button 
                       type="submit" 
                       disabled={createJobDescriptionMutation.isPending || updateJobDescriptionMutation.isPending}
                     >
-                      {editingJobDescription ? "Update" : "Create"}
+                      {editingJobDescription ? t('edit') : t('save')}
                     </Button>
                   </div>
                 </form>
@@ -355,13 +355,13 @@ export default function JobDescriptions() {
             <Card>
               <CardContent className="p-8 text-center">
                 <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Job Descriptions</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('noJobDescriptions')}</h3>
                 <p className="text-gray-500 mb-4">
-                  Create job descriptions to enable AI-powered candidate scoring and matching.
+                  {t('createJobDescriptionsMessage')}
                 </p>
                 <Button onClick={() => { setEditingJobDescription(null); resetForm(); setIsDialogOpen(true); }}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Your First Job Description
+                  {t('addFirstJobDescription')}
                 </Button>
               </CardContent>
             </Card>
@@ -379,10 +379,10 @@ export default function JobDescriptions() {
                         <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                           <div className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
-                            Created {new Date(jobDescription.createdAt).toLocaleDateString()}
+                            {t('created')} {new Date(jobDescription.createdAt).toLocaleDateString()}
                           </div>
                           <Badge variant={jobDescription.isActive ? "default" : "secondary"}>
-                            {jobDescription.isActive ? "Active" : "Inactive"}
+                            {jobDescription.isActive ? t('active') : t('inactive')}
                           </Badge>
                         </div>
                       </div>
@@ -407,26 +407,26 @@ export default function JobDescriptions() {
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <h4 className="font-medium text-gray-900 mb-2">Responsibilities</h4>
+                        <h4 className="font-medium text-gray-900 mb-2">{t('keyResponsibilities')}</h4>
                         <p className="text-sm text-gray-600 line-clamp-3">
                           {jobDescription.responsibilities}
                         </p>
                       </div>
                       <div>
-                        <h4 className="font-medium text-gray-900 mb-2">Required Experience</h4>
+                        <h4 className="font-medium text-gray-900 mb-2">{t('requiredExperience')}</h4>
                         <p className="text-sm text-gray-600 line-clamp-3">
                           {jobDescription.requiredExperience}
                         </p>
                       </div>
                       <div>
-                        <h4 className="font-medium text-gray-900 mb-2">Skills</h4>
+                        <h4 className="font-medium text-gray-900 mb-2">{t('requiredSkills')}</h4>
                         <p className="text-sm text-gray-600 line-clamp-3">
                           {jobDescription.skills}
                         </p>
                       </div>
                       {jobDescription.notes && (
                         <div>
-                          <h4 className="font-medium text-gray-900 mb-2">Additional Notes</h4>
+                          <h4 className="font-medium text-gray-900 mb-2">{t('additionalNotes')}</h4>
                           <p className="text-sm text-gray-600 line-clamp-3">
                             {jobDescription.notes}
                           </p>
