@@ -48,6 +48,11 @@ export default function Interviews() {
   const [showCandidateDropdown, setShowCandidateDropdown] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Calendar state
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
+  const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
 
   const scheduleInterviewMutation = useMutation({
     mutationFn: async (data: typeof interviewForm) => {
@@ -159,6 +164,48 @@ export default function Interviews() {
         return <Video className="w-4 h-4" />;
       default:
         return <Video className="w-4 h-4" />;
+    }
+  };
+
+  // Calendar helper functions
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  
+  const getDaysInMonth = (month: number, year: number) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+  
+  const getFirstDayOfMonth = (month: number, year: number) => {
+    return new Date(year, month, 1).getDay();
+  };
+  
+  const getInterviewsForDate = (day: number, month: number, year: number) => {
+    if (!interviews) return [];
+    
+    const targetDate = new Date(year, month, day);
+    return interviews.filter(interview => {
+      const interviewDate = new Date(interview.scheduledDate);
+      return interviewDate.toDateString() === targetDate.toDateString();
+    });
+  };
+  
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    if (direction === 'prev') {
+      if (calendarMonth === 0) {
+        setCalendarMonth(11);
+        setCalendarYear(calendarYear - 1);
+      } else {
+        setCalendarMonth(calendarMonth - 1);
+      }
+    } else {
+      if (calendarMonth === 11) {
+        setCalendarMonth(0);
+        setCalendarYear(calendarYear + 1);
+      } else {
+        setCalendarMonth(calendarMonth + 1);
+      }
     }
   };
 
@@ -349,12 +396,14 @@ export default function Interviews() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900">December 2024</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {monthNames[calendarMonth]} {calendarYear}
+                    </h3>
                     <div className="flex space-x-2">
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => navigateMonth('prev')}>
                         <ChevronLeft className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => navigateMonth('next')}>
                         <ChevronRight className="w-4 h-4" />
                       </Button>
                     </div>
@@ -370,31 +419,56 @@ export default function Interviews() {
                     <div className="p-2 text-center text-sm font-medium text-gray-500">Fri</div>
                     <div className="p-2 text-center text-sm font-medium text-gray-500">Sat</div>
                     
-                    {/* Calendar Days - Sample dates */}
-                    {Array.from({ length: 35 }, (_, i) => {
-                      const day = i - 6; // Start from previous month
-                      const isCurrentMonth = day > 0 && day <= 31;
-                      const isToday = day === 15;
-                      const hasInterview = [15, 16, 18].includes(day);
+                    {/* Calendar Days - Dynamic dates */}
+                    {(() => {
+                      const daysInMonth = getDaysInMonth(calendarMonth, calendarYear);
+                      const firstDay = getFirstDayOfMonth(calendarMonth, calendarYear);
+                      const today = new Date();
+                      const isCurrentMonth = today.getMonth() === calendarMonth && today.getFullYear() === calendarYear;
+                      const todayDate = today.getDate();
                       
-                      return (
-                        <div
-                          key={i}
-                          className={`p-2 text-center text-sm ${
-                            isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-                          } ${
-                            isToday ? 'bg-blue-100 text-primary font-medium rounded' : ''
-                          } ${
-                            hasInterview && isCurrentMonth ? 'relative' : ''
-                          }`}
-                        >
-                          {day > 0 ? day : ''}
-                          {hasInterview && isCurrentMonth && (
-                            <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full"></div>
-                          )}
-                        </div>
-                      );
-                    })}
+                      const calendarDays = [];
+                      
+                      // Previous month's trailing days
+                      for (let i = 0; i < firstDay; i++) {
+                        calendarDays.push(
+                          <div key={`prev-${i}`} className="p-2 text-center text-sm text-gray-300">
+                            
+                          </div>
+                        );
+                      }
+                      
+                      // Current month's days
+                      for (let day = 1; day <= daysInMonth; day++) {
+                        const dayInterviews = getInterviewsForDate(day, calendarMonth, calendarYear);
+                        const isToday = isCurrentMonth && day === todayDate;
+                        const hasInterviews = dayInterviews.length > 0;
+                        
+                        calendarDays.push(
+                          <div
+                            key={day}
+                            className={`p-2 text-center text-sm relative cursor-pointer hover:bg-gray-50 rounded ${
+                              isToday ? 'bg-blue-100 text-primary font-medium' : 'text-gray-900'
+                            } ${hasInterviews ? 'font-medium' : ''}`}
+                            title={hasInterviews ? `${dayInterviews.length} interview(s) scheduled` : ''}
+                          >
+                            {day}
+                            {hasInterviews && (
+                              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 flex space-x-0.5">
+                                {dayInterviews.slice(0, 3).map((_, index) => (
+                                  <div key={index} className="w-1 h-1 bg-primary rounded-full"></div>
+                                ))}
+                                {dayInterviews.length > 3 && (
+                                  <div className="w-1 h-1 bg-red-500 rounded-full"></div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                      
+                      return calendarDays;
+                    })()}
                   </div>
                 </CardContent>
               </Card>
