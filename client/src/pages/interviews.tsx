@@ -299,8 +299,10 @@ Recruitment Team`
       const res = await apiRequest("PUT", `/api/interviews/${data.id}`, data);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/interviews"] });
+    onSuccess: async (updatedInterview) => {
+      console.log('Interview update successful:', updatedInterview);
+      // Force refetch of interviews data
+      await queryClient.refetchQueries({ queryKey: ["/api/interviews"] });
       setIsEditDialogOpen(false);
       setEditingInterview(null);
       setInterviewForm({
@@ -311,6 +313,7 @@ Recruitment Team`
       });
       setSelectedCandidate(null);
       setCandidateSearch("");
+      setShowCandidateDropdown(false);
       toast({
         title: "Interview Updated",
         description: "Interview updated successfully",
