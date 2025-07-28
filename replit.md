@@ -10,6 +10,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (January 28, 2025)
 
+✅ **User Management System Fixed (COMPLETED):**
+- **Root Cause**: Server was using modular routing system but user management routes were only in old monolithic routes file
+- **Solution**: Added user management endpoints (GET/POST/PUT/DELETE /api/users) to proper authRoutes.ts module
+- **Issue**: API requests were returning HTML instead of JSON due to Vite fallback middleware catching unregistered routes
+- **Resolution**: Routes now properly registered and responding with valid JSON
+- **Testing**: Successfully created, updated, and deleted users with proper UI feedback
+- **Status**: Create New User functionality working correctly, dialog closes, list updates automatically
+
 ✅ **PDF Extraction System Fixed (COMPLETED):**
 - **Root Cause**: pdf-parse library initialization bug trying to read non-existent test file './test/data/05-versions-space.pdf'
 - **Solution**: Created missing test file to resolve library initialization error
