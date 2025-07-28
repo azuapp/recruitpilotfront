@@ -422,9 +422,21 @@ export default function Emails() {
                             "text-xs sm:text-sm text-gray-600",
                             !isExpanded && "line-clamp-2"
                           )}>
-                            {email.content}
+                            {isExpanded ? (
+                              <div 
+                                className="prose prose-sm max-w-none text-gray-600 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mb-2 [&_p]:mb-2 [&_strong]:font-medium"
+                                dangerouslySetInnerHTML={{ 
+                                  __html: email.content || "No content available" 
+                                }}
+                              />
+                            ) : (
+                              <div className="text-gray-600">
+                                {email.content?.replace(/<[^>]*>/g, '').substring(0, 150) || "No content available"}
+                                {email.content && email.content.replace(/<[^>]*>/g, '').length > 150 ? "..." : ""}
+                              </div>
+                            )}
                           </div>
-                          {email.content.length > 100 && (
+                          {email.content && email.content.length > 100 && (
                             <Button
                               variant="ghost"
                               size="sm"
