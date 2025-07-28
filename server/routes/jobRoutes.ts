@@ -45,10 +45,11 @@ router.post('/job-descriptions', requireAuth, asyncHandler(async (req, res) => {
 router.put('/job-descriptions/:id', requireAuth, asyncHandler(async (req, res) => {
   const { id } = req.params;
   
-  // Validate partial data for updates
+  // Validate partial data for updates - support both old and new schema fields
   const allowedUpdates = [
-    'title', 'description', 'requirements', 'benefits', 
-    'location', 'salaryMin', 'salaryMax', 'isActive'
+    'title', 'position', 'description', 'responsibilities', 'requirements', 
+    'requiredExperience', 'benefits', 'skills', 'experienceLevel',
+    'location', 'salaryMin', 'salaryMax', 'notes', 'isActive'
   ];
   
   const updates: any = {};

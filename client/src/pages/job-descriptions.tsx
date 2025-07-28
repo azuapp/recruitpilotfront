@@ -30,10 +30,18 @@ import { cn } from "@/lib/utils";
 
 interface JobDescription {
   id: string;
+  title?: string;
   position: string;
-  responsibilities: string;
-  requiredExperience: string;
+  description?: string;
+  responsibilities?: string;
+  requirements?: string;
+  requiredExperience?: string;
+  benefits?: string;
   skills: string;
+  experienceLevel?: string;
+  location?: string;
+  salaryMin?: number;
+  salaryMax?: number;
   notes?: string;
   isActive: boolean;
   createdAt: string;
@@ -41,10 +49,18 @@ interface JobDescription {
 }
 
 interface JobDescriptionForm {
+  title: string;
   position: string;
+  description: string;
   responsibilities: string;
+  requirements: string;
   requiredExperience: string;
+  benefits: string;
   skills: string;
+  experienceLevel: string;
+  location: string;
+  salaryMin: number | '';
+  salaryMax: number | '';
   notes: string;
 }
 
@@ -55,10 +71,18 @@ export default function JobDescriptions() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingJobDescription, setEditingJobDescription] = useState<JobDescription | null>(null);
   const [formData, setFormData] = useState<JobDescriptionForm>({
+    title: "",
     position: "",
+    description: "",
     responsibilities: "",
+    requirements: "",
     requiredExperience: "",
+    benefits: "",
     skills: "",
+    experienceLevel: "",
+    location: "",
+    salaryMin: '',
+    salaryMax: '',
     notes: "",
   });
 
@@ -185,10 +209,18 @@ export default function JobDescriptions() {
 
   const resetForm = () => {
     setFormData({
+      title: "",
       position: "",
+      description: "",
       responsibilities: "",
+      requirements: "",
       requiredExperience: "",
+      benefits: "",
       skills: "",
+      experienceLevel: "",
+      location: "",
+      salaryMin: '',
+      salaryMax: '',
       notes: "",
     });
   };
@@ -196,10 +228,18 @@ export default function JobDescriptions() {
   const handleEdit = (jobDescription: JobDescription) => {
     setEditingJobDescription(jobDescription);
     setFormData({
-      position: jobDescription.position,
-      responsibilities: jobDescription.responsibilities,
-      requiredExperience: jobDescription.requiredExperience,
-      skills: jobDescription.skills,
+      title: jobDescription.title || "",
+      position: jobDescription.position || "",
+      description: jobDescription.description || "",
+      responsibilities: jobDescription.responsibilities || "",
+      requirements: jobDescription.requirements || "",
+      requiredExperience: jobDescription.requiredExperience || "",
+      benefits: jobDescription.benefits || "",
+      skills: jobDescription.skills || "",
+      experienceLevel: jobDescription.experienceLevel || "",
+      location: jobDescription.location || "",
+      salaryMin: jobDescription.salaryMin || '',
+      salaryMax: jobDescription.salaryMax || '',
       notes: jobDescription.notes || "",
     });
     setIsDialogOpen(true);
@@ -208,22 +248,29 @@ export default function JobDescriptions() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.position || !formData.responsibilities || !formData.requiredExperience || !formData.skills) {
+    if (!formData.position || !formData.skills) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields",
+        description: "Please fill in all required fields (Position and Skills)",
         variant: "destructive",
       });
       return;
     }
 
+    // Convert salary fields to numbers if they're not empty
+    const submitData = {
+      ...formData,
+      salaryMin: formData.salaryMin ? Number(formData.salaryMin) : undefined,
+      salaryMax: formData.salaryMax ? Number(formData.salaryMax) : undefined,
+    };
+
     if (editingJobDescription) {
       updateJobDescriptionMutation.mutate({
         id: editingJobDescription.id,
-        data: formData,
+        data: submitData,
       });
     } else {
-      createJobDescriptionMutation.mutate(formData);
+      createJobDescriptionMutation.mutate(submitData);
     }
   };
 
