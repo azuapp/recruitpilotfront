@@ -23,8 +23,10 @@ interface User {
   firstName?: string;
   lastName?: string;
   profileImageUrl?: string;
+  role?: string;
+  isActive?: boolean;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export default function Users() {
@@ -424,12 +426,14 @@ export default function Users() {
                             Created: {new Date(user.createdAt).toLocaleDateString()}
                           </span>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Calendar className="w-3 h-3 text-gray-500" />
-                          <span className="text-gray-600">
-                            Updated: {new Date(user.updatedAt).toLocaleDateString()}
-                          </span>
-                        </div>
+                        {user.updatedAt && (
+                          <div className="flex items-center space-x-2">
+                            <Calendar className="w-3 h-3 text-gray-500" />
+                            <span className="text-gray-600">
+                              Updated: {new Date(user.updatedAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Actions */}
