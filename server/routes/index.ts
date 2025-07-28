@@ -8,6 +8,7 @@ import interviewRoutes from './interviewRoutes';
 import emailRoutes from './emailRoutes';
 import jobRoutes from './jobRoutes';
 import testRoutes from './testRoutes';
+import evaluationRoutes from './evaluationRoutes';
 import { setupAuth } from '../auth';
 import { logger } from '../services/logger';
 import { asyncHandler, handleError } from '../services/errorHandler';
@@ -25,6 +26,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', emailRoutes);
   app.use('/api', jobRoutes);
   app.use('/api', testRoutes);
+  app.use('/api', evaluationRoutes);
 
   // Legacy email endpoint for backward compatibility
   app.post('/api/send-email', asyncHandler(async (req, res) => {
