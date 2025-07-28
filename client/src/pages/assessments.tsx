@@ -94,43 +94,28 @@ export default function Assessments() {
     return <div>Loading...</div>;
   }
 
-  // Mock assessment data since we don't have real data yet
-  const mockAssessments = [
-    {
-      id: "1",
-      candidateName: "Michael Johnson",
-      position: "Frontend Developer",
-      overallScore: 85,
-      technicalSkills: 90,
-      experienceMatch: 85,
-      education: 75,
-      insights: [
-        "Strong proficiency in React, JavaScript, and modern frontend frameworks",
-        "5+ years of relevant experience with enterprise-level applications",
-        "Excellent problem-solving skills demonstrated through portfolio projects",
-        "Recommended for technical interview"
-      ],
-      processedAt: "2 hours ago",
-      isTopCandidate: false
-    },
-    {
-      id: "2",
-      candidateName: "Sarah Chen",
-      position: "UX/UI Designer",
-      overallScore: 92,
-      technicalSkills: 95,
-      experienceMatch: 90,
-      education: 88,
-      insights: [
-        "Exceptional design portfolio with diverse project experience",
-        "Strong user research and usability testing background",
-        "Proficient in Figma, Adobe Creative Suite, and prototyping tools",
-        "Highly recommended for immediate interview"
-      ],
-      processedAt: "4 hours ago",
-      isTopCandidate: true
-    }
-  ];
+  // Get candidates to merge with assessments
+  const { data: candidates } = useQuery<any[]>({
+    queryKey: ["/api/candidates"],
+    retry: false,
+  });
+
+  // Merge assessments with candidate data
+  const mergedAssessments = assessments?.map(assessment => {
+    const candidate = candidates?.find((c: any) => c.id === assessment.candidateId);
+    return {
+      ...assessment,
+      candidateName: candidate?.fullName || 'Unknown Candidate',
+      position: candidate?.position || 'Unknown Position',
+      overallScore: parseFloat(assessment.overallScore) || 0,
+      technicalSkills: parseFloat(assessment.technicalSkills) || 0,
+      experienceMatch: parseFloat(assessment.experienceMatch) || 0,
+      education: parseFloat(assessment.education) || 0,
+      insights: assessment.aiInsights ? assessment.aiInsights.split('\n').filter(insight => insight.trim()) : [],
+      processedAt: assessment.processedAt ? new Date(assessment.processedAt).toLocaleDateString() : 'Recently',
+      isTopCandidate: parseFloat(assessment.overallScore) > 80
+    };
+  }) || [];
 
   return (
     <div className={`flex min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`}>
@@ -168,7 +153,7 @@ export default function Assessments() {
                   <div>
                     <p className="text-sm font-medium text-gray-600">{t("totalAssessments")}</p>
                     <p className="text-3xl font-bold text-gray-900 mt-2">
-                      {assessmentsLoading ? "..." : assessments?.length || mockAssessments.length}
+                      {assessmentsLoading ? "..." : mergedAssessments.length}
                     </p>
                   </div>
                   <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -216,18 +201,17 @@ export default function Assessments() {
                   <div className="p-6 text-center text-gray-500">
                     Loading assessments...
                   </div>
-                ) : assessments?.length === 0 ? (
+                ) : mergedAssessments.length === 0 ? (
                   <div className="p-6 text-center text-gray-500">
-                    No assessments completed yet. Assessments will appear here once candidates' resumes are processed.
+                    No assessments completed yet. Click "Run Bulk Assessment" to process candidates.
                   </div>
                 ) : (
-                  // Display mock data or real data
-                  mockAssessments.map((assessment, index) => (
+                  mergedAssessments.map((assessment) => (
                     <div key={assessment.id} className="py-6">
                       <div className="flex items-start space-x-4">
                         <Avatar className="w-12 h-12">
                           <AvatarFallback>
-                            {assessment.candidateName.split(' ').map(n => n[0]).join('')}
+                            {assessment.candidateName.split(' ').map((n: string) => n[0]).join('')}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
