@@ -559,6 +559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Evaluation routes
   app.post('/api/evaluations/run', isAuthenticated, async (req, res) => {
     try {
+      console.log("POST /api/evaluations/run - authenticated user:", req.user?.email);
       const { runEvaluation } = await import('./controllers/evaluationController');
       await runEvaluation(req, res);
     } catch (error) {
@@ -569,6 +570,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/evaluations', isAuthenticated, async (req, res) => {
     try {
+      console.log("GET /api/evaluations - authenticated user:", req.user?.email);
       const { getEvaluations } = await import('./controllers/evaluationController');
       await getEvaluations(req, res);
     } catch (error) {

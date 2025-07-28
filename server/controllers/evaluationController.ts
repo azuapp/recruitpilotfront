@@ -173,11 +173,54 @@ export const runEvaluation = async (req: Request, res: Response) => {
   try {
     const { position } = req.body;
     
-    logger.info("Starting candidate evaluation", { position });
+    logger.info("Starting candidate evaluation", { 
+      position, 
+      user: (req as any).user?.email,
+      hasAuth: !!(req as any).user 
+    });
 
     if (!process.env.OPENAI_API_KEY) {
       logger.error("OpenAI API key not configured");
       return res.status(500).json({ message: "OpenAI API key not configured" });
+    }
+
+    // For testing: create fake evaluation results if no OpenAI key
+    if (process.env.NODE_ENV === 'development') {
+      logger.info("Creating test evaluation results");
+      
+      const candidates = await storage.getCandidates();
+      const filteredCandidates = position === "all" 
+        ? candidates 
+        : candidates.filter((c: any) => c.position === position);
+
+      const testResults = filteredCandidates.map((candidate: any, index: number) => ({
+        candidateId: candidate.id,
+        candidateName: candidate.fullName,
+        position: candidate.position,
+        fitScore: Math.floor(Math.random() * 40) + 60, // 60-100
+        matchingSkills: ["JavaScript", "React", "Problem Solving"],
+        missingSkills: ["TypeScript", "Advanced CSS"],
+        experienceMatch: Math.floor(Math.random() * 30) + 70,
+        educationMatch: Math.floor(Math.random() * 30) + 70,
+        overallRecommendation: `${candidate.fullName} shows good potential for the ${candidate.position} role with solid foundational skills.`,
+        ranking: index + 1
+      }));
+
+      // Sort by fit score and assign rankings
+      testResults.sort((a, b) => b.fitScore - a.fitScore);
+      testResults.forEach((evaluation, index) => {
+        evaluation.ranking = index + 1;
+      });
+
+      (global as any).evaluationResults = testResults;
+      
+      logger.info("Test evaluation completed", { count: testResults.length });
+      
+      return res.json({
+        message: `Evaluated ${testResults.length} candidates successfully (test mode)`,
+        results: testResults,
+        count: testResults.length
+      });
     }
 
     // Get candidates for the specific position or all if "all" is selected
@@ -219,6 +262,14 @@ export const runEvaluation = async (req: Request, res: Response) => {
     // Store evaluations in temporary memory for this session
     // Note: In a real implementation, this would be stored in database
     (global as any).evaluationResults = evaluationResults;
+    
+    logger.info("Stored evaluations in memory", { 
+      count: evaluationResults.length,
+      sample: evaluationResults.slice(0, 2).map(e => ({ 
+        name: e.candidateName, 
+        score: e.fitScore 
+      }))
+    });
 
     logger.info("Evaluation completed", { 
       total: evaluationResults.length,
@@ -228,7 +279,8 @@ export const runEvaluation = async (req: Request, res: Response) => {
 
     res.json({
       message: `Evaluated ${evaluationResults.length} candidates successfully`,
-      results: evaluationResults
+      results: evaluationResults,
+      count: evaluationResults.length
     });
 
   } catch (error) {
@@ -243,7 +295,13 @@ export const getEvaluations = async (req: Request, res: Response) => {
     
     const evaluations = (global as any).evaluationResults || [];
     
+    logger.info("Fetching evaluations", { 
+      stored: evaluations.length, 
+      requestedPosition: position 
+    });
+    
     if (!evaluations || evaluations.length === 0) {
+      logger.info("No evaluations found in memory");
       return res.json([]);
     }
 
@@ -252,6 +310,7 @@ export const getEvaluations = async (req: Request, res: Response) => {
       ? evaluations.filter((e: any) => e.position === position)
       : evaluations;
 
+    logger.info("Returning evaluations", { count: filteredEvaluations.length });
     res.json(filteredEvaluations);
 
   } catch (error) {

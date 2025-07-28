@@ -91,17 +91,24 @@ export default function Evaluations() {
   const evaluationMutation = useMutation({
     mutationFn: async (position: string) => {
       const response = await apiRequest("POST", "/api/evaluations/run", { position });
-      return response.json();
+      const result = await response.json();
+      console.log("Evaluation response:", result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Evaluation success:", data);
       toast({
         title: "Success",
-        description: "Candidate evaluations completed successfully",
+        description: `Evaluated ${data.count || 0} candidates successfully`,
       });
-      refetchEvaluations();
+      // Force refetch after a short delay
+      setTimeout(() => {
+        refetchEvaluations();
+      }, 500);
       setIsEvaluating(false);
     },
     onError: (error: Error) => {
+      console.error("Evaluation error:", error);
       toast({
         title: "Error",
         description: error.message,
