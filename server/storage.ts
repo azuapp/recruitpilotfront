@@ -47,6 +47,7 @@ export interface IStorage {
     offset?: number;
   }): Promise<CandidateWithAssessment[]>;
   getCandidateById(id: string): Promise<CandidateWithRelations | undefined>;
+  getCandidateByEmailAndPosition(email: string, position: string): Promise<Candidate | undefined>;
   updateCandidateStatus(id: string, status: string): Promise<Candidate>;
   
   // Assessment operations
@@ -252,6 +253,14 @@ export class DatabaseStorage implements IStorage {
       emails: candidateEmails,
       jobFitScores: [], // Add missing field for type compatibility
     };
+  }
+
+  async getCandidateByEmailAndPosition(email: string, position: string): Promise<Candidate | undefined> {
+    const [candidate] = await db
+      .select()
+      .from(candidates)
+      .where(and(eq(candidates.email, email), eq(candidates.position, position)));
+    return candidate;
   }
 
   async updateCandidateStatus(id: string, status: string): Promise<Candidate> {

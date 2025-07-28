@@ -158,6 +158,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cvFilePath: req.file?.path,
       });
 
+      // Check for duplicate application (same email + same position)
+      const existingCandidate = await storage.getCandidateByEmailAndPosition(
+        candidateData.email,
+        candidateData.position
+      );
+
+      if (existingCandidate) {
+        return res.status(400).json({ 
+          message: 'You have already applied for this position. Please check your email for application status or contact us for updates.'
+        });
+      }
+
       // Extract text from PDF if file was uploaded
       let resumeSummary = null;
       if (req.file?.path) {
