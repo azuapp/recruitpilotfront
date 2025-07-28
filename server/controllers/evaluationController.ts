@@ -259,6 +259,45 @@ export const getEvaluations = async (req: Request, res: Response) => {
   }
 };
 
+export const deleteEvaluation = async (req: Request, res: Response) => {
+  try {
+    const { candidateId } = req.params;
+    
+    if (!candidateId) {
+      return res.status(400).json({ message: "Candidate ID is required" });
+    }
+    
+    const evaluations = (global as any).evaluationResults || [];
+    const initialLength = evaluations.length;
+    
+    // Remove evaluation for the specific candidate
+    (global as any).evaluationResults = evaluations.filter((e: any) => e.candidateId !== candidateId);
+    
+    const removedCount = initialLength - (global as any).evaluationResults.length;
+    
+    if (removedCount === 0) {
+      logger.warn("No evaluation found to delete", { candidateId });
+      return res.status(404).json({ message: "Evaluation not found" });
+    }
+    
+    logger.info("Evaluation deleted successfully", { 
+      candidateId, 
+      removedCount,
+      remaining: (global as any).evaluationResults.length 
+    });
+    
+    res.json({ 
+      message: "Evaluation deleted successfully",
+      deletedCount: removedCount,
+      remainingCount: (global as any).evaluationResults.length
+    });
+
+  } catch (error) {
+    logger.error("Error deleting evaluation:", error);
+    res.status(500).json({ message: "Failed to delete evaluation" });
+  }
+};
+
 export const getJobDescriptions = async (req: Request, res: Response) => {
   try {
     const descriptions = Object.entries(jobDescriptions).map(([key, value]) => ({

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, TrendingUp, Users, Award, ChevronRight } from "lucide-react";
+import { Loader2, TrendingUp, Users, Award, ChevronRight, Trash2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -171,6 +171,33 @@ export default function Evaluations() {
     },
   });
 
+  const deleteEvaluationMutation = useMutation({
+    mutationFn: async (candidateId: string) => {
+      const response = await apiRequest("DELETE", `/api/evaluations/${candidateId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: isRTL ? "تم حذف التقييم" : "Evaluation Deleted",
+        description: isRTL ? "تم حذف التقييم بنجاح" : "Evaluation deleted successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/evaluations"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: isRTL ? "خطأ في الحذف" : "Delete Error",
+        description: error.message || (isRTL ? "فشل في حذف التقييم" : "Failed to delete evaluation"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteEvaluation = (candidateId: string, candidateName: string) => {
+    if (window.confirm(isRTL ? `هل أنت متأكد من حذف تقييم ${candidateName}؟` : `Are you sure you want to delete evaluation for ${candidateName}?`)) {
+      deleteEvaluationMutation.mutate(candidateId);
+    }
+  };
+
   if (isLoading || !isAuthenticated) {
     return <div>Loading...</div>;
   }
@@ -325,7 +352,7 @@ export default function Evaluations() {
               </h2>
               
               {mergedEvaluations.map((evaluation, index) => (
-                <Card key={evaluation.candidateId} className="overflow-hidden">
+                <Card key={`evaluation-${evaluation.candidateId}-${index}`} className="overflow-hidden">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-4">
@@ -349,16 +376,31 @@ export default function Evaluations() {
                         </div>
                       </div>
                       
-                      <div className="text-right">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                            {t("fitScore")}
-                          </span>
-                          <Badge variant={getScoreBadgeVariant(evaluation.fitScore)}>
-                            {evaluation.fitScore}%
-                          </Badge>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                              {t("fitScore")}
+                            </span>
+                            <Badge variant={getScoreBadgeVariant(evaluation.fitScore)}>
+                              {evaluation.fitScore}%
+                            </Badge>
+                          </div>
+                          <Progress value={evaluation.fitScore} className="w-24" />
                         </div>
-                        <Progress value={evaluation.fitScore} className="w-24" />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteEvaluation(evaluation.candidateId, evaluation.candidateName)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                          disabled={deleteEvaluationMutation.isPending}
+                        >
+                          {deleteEvaluationMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
                       </div>
                     </div>
 

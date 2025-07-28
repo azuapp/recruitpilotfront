@@ -194,6 +194,10 @@ const translations = {
     welcome: "Welcome",
     logout: "Logout",
     login: "Login",
+    
+    // Delete functionality
+    deleteEvaluation: "Delete Evaluation",
+    confirmDelete: "Are you sure you want to delete this evaluation?",
   },
   ar: {
     // Navigation
@@ -379,6 +383,10 @@ const translations = {
     welcome: "مرحباً",
     logout: "تسجيل الخروج",
     login: "تسجيل الدخول",
+    
+    // Delete functionality
+    deleteEvaluation: "حذف التقييم",
+    confirmDelete: "هل أنت متأكد من حذف هذا التقييم؟",
   }
 };
 
