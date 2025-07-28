@@ -11,11 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, Trash2, Loader2 } from "lucide-react";
+import { Send, Trash2, Loader2, Mail, User, Calendar, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface EmailHistory {
@@ -27,6 +27,13 @@ interface EmailHistory {
   status: string;
   sentAt?: string;
   createdAt: string;
+}
+
+interface Candidate {
+  id: string;
+  fullName: string;
+  email: string;
+  position: string;
 }
 
 export default function Emails() {
@@ -41,12 +48,42 @@ export default function Emails() {
     emailType: "follow-up"
   });
   const [candidateSearch, setCandidateSearch] = useState("");
-  const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [showCandidateDropdown, setShowCandidateDropdown] = useState(false);
   const [expandedEmails, setExpandedEmails] = useState<Set<string>>(new Set());
   const [deletingEmailId, setDeletingEmailId] = useState<string | null>(null);
 
-  // Send email mutation 
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      toast({
+        title: "Unauthorized",
+        description: "You are logged out. Logging in again...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/auth";
+      }, 500);
+    }
+  }, [isAuthenticated, isLoading, toast]);
+
+  const { data: emails, isLoading: emailsLoading } = useQuery<EmailHistory[]>({
+    queryKey: ["/api/emails"],
+    retry: false,
+  });
+
+  const { data: candidates } = useQuery<Candidate[]>({
+    queryKey: ["/api/candidates"],
+    retry: false,
+  });
+
+  // Filter candidates based on search
+  const filteredCandidates = candidates?.filter(candidate =>
+    candidate.fullName.toLowerCase().includes(candidateSearch.toLowerCase()) ||
+    candidate.email.toLowerCase().includes(candidateSearch.toLowerCase()) ||
+    candidate.position.toLowerCase().includes(candidateSearch.toLowerCase())
+  ) || [];
+
   const sendEmailMutation = useMutation({
     mutationFn: async (emailData: { to: string; subject: string; body: string }) => {
       const res = await apiRequest("POST", "/api/send-email", emailData);
@@ -63,13 +100,23 @@ export default function Emails() {
       });
       setSelectedCandidate(null);
       setCandidateSearch("");
-      setShowCandidateDropdown(false);
       toast({
         title: "Email Sent",
-        description: `Email sent successfully!`,
+        description: "Email sent successfully!",
       });
     },
     onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/auth";
+        }, 500);
+        return;
+      }
       toast({
         title: "Email Failed",
         description: "Failed to send email. Please try again.",
@@ -78,7 +125,6 @@ export default function Emails() {
     },
   });
 
-  // Delete email mutation
   const deleteEmailMutation = useMutation({
     mutationFn: async (emailId: string) => {
       const response = await apiRequest("DELETE", `/api/emails/${emailId}`);
@@ -87,15 +133,15 @@ export default function Emails() {
     onMutate: async (emailId: string) => {
       setDeletingEmailId(emailId);
     },
-    onSuccess: (data, emailId) => {
+    onSuccess: () => {
       setDeletingEmailId(null);
       queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
       toast({
-        title: isRTL ? "تم حذف الإيميل" : "Email Deleted",
-        description: isRTL ? "تم حذف الإيميل بنجاح" : "Email deleted successfully",
+        title: "Email Deleted",
+        description: "Email deleted successfully",
       });
     },
-    onError: (error: any, emailId) => {
+    onError: (error: any) => {
       setDeletingEmailId(null);
       if (isUnauthorizedError(error)) {
         toast({
@@ -104,37 +150,23 @@ export default function Emails() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/auth";
         }, 500);
         return;
       }
       toast({
-        title: isRTL ? "خطأ في الحذف" : "Delete Error",
-        description: error.message || (isRTL ? "فشل في حذف الإيميل" : "Failed to delete email"),
+        title: "Error",
+        description: error.message || "Failed to delete email",
         variant: "destructive",
       });
     },
   });
 
-  const handleDeleteEmail = (emailId: string, subject: string) => {
-    if (deletingEmailId) {
-      return;
-    }
-    
-    const confirmMessage = isRTL 
-      ? `${t("confirmDeleteEmail")} (${subject})`
-      : `${t("confirmDeleteEmail")} (${subject})`;
-    
-    if (window.confirm(confirmMessage)) {
-      deleteEmailMutation.mutate(emailId);
-    }
-  };
-
   const handleSendEmail = () => {
     if (!selectedCandidate || !emailForm.subject || !emailForm.content) {
       toast({
-        title: "Validation Error",
-        description: "Please select a candidate and fill in all required fields",
+        title: "Error",
+        description: "Please complete all required fields",
         variant: "destructive",
       });
       return;
@@ -149,7 +181,17 @@ export default function Emails() {
     sendEmailMutation.mutate(emailData);
   };
 
-  // Toggle email card expansion
+  const handleCandidateSelect = (candidate: Candidate) => {
+    setSelectedCandidate(candidate);
+    setCandidateSearch(candidate.fullName);
+    setShowCandidateDropdown(false);
+  };
+
+  const handleDeleteEmail = (email: EmailHistory) => {
+    if (!confirm('Are you sure you want to delete this email?')) return;
+    deleteEmailMutation.mutate(email.id);
+  };
+
   const toggleEmailExpansion = (emailId: string) => {
     const newExpanded = new Set(expandedEmails);
     if (newExpanded.has(emailId)) {
@@ -160,412 +202,264 @@ export default function Emails() {
     setExpandedEmails(newExpanded);
   };
 
-  // Redirect to home if not authenticated
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, isLoading, toast]);
-
-  const { data: emails, isLoading: emailsLoading } = useQuery<EmailHistory[]>({
-    queryKey: ["/api/emails"],
-    retry: false,
-  });
-
-  // Fetch candidates for the searchable dropdown
-  const { data: candidates } = useQuery<any[]>({
-    queryKey: ["/api/candidates"],
-    retry: false,
-  });
-
-  // Filter candidates based on search
-  const filteredCandidates = candidates?.filter(candidate =>
-    candidate.fullName.toLowerCase().includes(candidateSearch.toLowerCase()) ||
-    candidate.email.toLowerCase().includes(candidateSearch.toLowerCase()) ||
-    candidate.position.toLowerCase().includes(candidateSearch.toLowerCase())
-  ) || [];
-
   const getStatusBadge = (status: string) => {
     const statusMap = {
-      sent: { label: t("sent"), className: "bg-green-100 text-green-800" },
-      delivered: { label: t("delivered"), className: "bg-green-100 text-green-800" },
-      pending: { label: t("pending"), className: "bg-amber-100 text-amber-800" },
-      failed: { label: t("failed"), className: "bg-red-100 text-red-800" },
+      sent: { label: "Sent", variant: "default" as const },
+      pending: { label: "Pending", variant: "secondary" as const },
+      failed: { label: "Failed", variant: "destructive" as const },
     };
+
+    const statusInfo = statusMap[status as keyof typeof statusMap] || { label: status, variant: "default" as const };
     
-    const config = statusMap[status as keyof typeof statusMap] || statusMap.pending;
     return (
-      <Badge className={config.className}>
-        {config.label}
+      <Badge variant={statusInfo.variant} className="text-xs">
+        {statusInfo.label}
       </Badge>
     );
   };
 
-  const getTypeBadge = (type: string) => {
-    const typeMap = {
-      confirmation: { label: "Confirmation", className: "bg-gray-100 text-gray-800" },
-      interview: { label: "Interview", className: "bg-blue-100 text-blue-800" },
-      "follow-up": { label: "Follow-up", className: "bg-amber-100 text-amber-800" },
-      rejection: { label: "Rejection", className: "bg-red-100 text-red-800" },
-      offer: { label: "Offer", className: "bg-green-100 text-green-800" },
-    };
-    
-    const config = typeMap[type as keyof typeof typeMap] || typeMap.confirmation;
-    return (
-      <Badge variant="outline" className={config.className}>
-        {config.label}
-      </Badge>
-    );
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
-  if (isLoading || !isAuthenticated) {
-    return <div>Loading...</div>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-border" />
+      </div>
+    );
   }
 
-  // Mock email data since we don't have real data yet
-  const mockEmails = [
-    {
-      id: "1",
-      candidateName: "Michael Johnson",
-      candidateEmail: "michael.j@email.com",
-      subject: "Interview Confirmation - Frontend Developer",
-      content: "Interview scheduled for December 15, 2024 at 10:00 AM via video call...",
-      type: "interview",
-      status: "delivered",
-      sentAt: "2 hours ago"
-    },
-    {
-      id: "2",
-      candidateName: "Sarah Chen",
-      candidateEmail: "sarah.chen@email.com",
-      subject: "Application Received - UX Designer",
-      content: "Thank you for your application for the UX Designer position. We have received your application and will review it shortly...",
-      type: "confirmation",
-      status: "delivered",
-      sentAt: "4 hours ago"
-    },
-    {
-      id: "3",
-      candidateName: "David Rodriguez",
-      candidateEmail: "d.rodriguez@email.com",
-      subject: "Follow-up Required - Data Scientist",
-      content: "We need additional information regarding your availability for the Data Scientist position...",
-      type: "follow-up",
-      status: "pending",
-      sentAt: "1 day ago"
-    }
-  ];
-
   return (
-    <div className={`flex min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`}>
+    <div className={cn("flex min-h-screen bg-gray-50", isRTL ? "flex-row-reverse" : "flex-row")}>
       <Sidebar />
       
       <main className={cn(
-        "flex-1 min-h-screen",
+        "flex-1 min-w-0 transition-all duration-200",
         isRTL ? "lg:mr-64" : "lg:ml-64"
       )}>
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 p-4 sm:p-6 mt-16 lg:mt-0">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+        <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{t("emailHistory")}</h2>
-              <p className="text-gray-600 mt-1 text-sm sm:text-base">{t("trackEmailCommunications")}</p>
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
+                {t("emails")}
+              </h1>
+              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
+                Send and manage candidate communications
+              </p>
             </div>
-            <div className="flex space-x-3">
-              <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="w-full sm:w-auto">
-                    <Send className="w-4 h-4 mr-2" />
-                    {t("sendEmail")}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-lg">
-                  <DialogHeader>
-                    <DialogTitle>{t("sendEmail")}</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label>Select Candidate</Label>
-                      <div className="relative">
-                        <Input
-                          value={selectedCandidate ? `${selectedCandidate.fullName} (${selectedCandidate.email})` : candidateSearch}
-                          onChange={(e) => {
-                            setCandidateSearch(e.target.value);
-                            setSelectedCandidate(null);
-                            setShowCandidateDropdown(true);
-                          }}
-                          onFocus={() => setShowCandidateDropdown(true)}
-                          placeholder="Search candidates by name, email, or position..."
-                          className="w-full"
-                        />
-                        {showCandidateDropdown && filteredCandidates.length > 0 && (
-                          <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto mt-1">
-                            {filteredCandidates.slice(0, 10).map((candidate) => (
-                              <div
-                                key={candidate.id}
-                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
-                                onClick={() => {
-                                  setSelectedCandidate(candidate);
-                                  setCandidateSearch("");
-                                  setShowCandidateDropdown(false);
-                                }}
-                              >
-                                <div className="font-medium text-gray-900">{candidate.fullName}</div>
-                                <div className="text-sm text-gray-600">{candidate.email}</div>
-                                <div className="text-xs text-gray-500">{candidate.position}</div>
-                              </div>
-                            ))}
+            <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="text-xs sm:text-sm">
+                  <Send className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  Send Email
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="w-[95vw] max-w-lg mx-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-sm sm:text-base">Send Email to Candidate</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  {/* Candidate Search */}
+                  <div className="relative">
+                    <Label className="text-sm">Candidate</Label>
+                    <Input
+                      placeholder="Search candidates..."
+                      value={candidateSearch}
+                      onChange={(e) => {
+                        setCandidateSearch(e.target.value);
+                        setShowCandidateDropdown(true);
+                      }}
+                      onFocus={() => setShowCandidateDropdown(true)}
+                      className="mt-2"
+                    />
+                    {showCandidateDropdown && filteredCandidates.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        {filteredCandidates.map((candidate) => (
+                          <div
+                            key={candidate.id}
+                            className="px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm"
+                            onClick={() => handleCandidateSelect(candidate)}
+                          >
+                            <div className="font-medium">{candidate.fullName}</div>
+                            <div className="text-gray-500">{candidate.email} - {candidate.position}</div>
                           </div>
-                        )}
+                        ))}
                       </div>
-                    </div>
-                    <div>
-                      <Label>{t("emailSubject")}</Label>
-                      <Input
-                        value={emailForm.subject}
-                        onChange={(e) => setEmailForm(prev => ({ ...prev, subject: e.target.value }))}
-                        placeholder="Email subject..."
-                      />
-                    </div>
-                    <div>
-                      <Label>{t("emailType")}</Label>
-                      <Select value={emailForm.emailType} onValueChange={(value) => setEmailForm(prev => ({ ...prev, emailType: value }))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="confirmation">Confirmation</SelectItem>
-                          <SelectItem value="interview">Interview</SelectItem>
-                          <SelectItem value="follow-up">Follow-up</SelectItem>
-                          <SelectItem value="rejection">Rejection</SelectItem>
-                          <SelectItem value="offer">Offer</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>{t("emailContent")}</Label>
-                      <Textarea
-                        value={emailForm.content}
-                        onChange={(e) => setEmailForm(prev => ({ ...prev, content: e.target.value }))}
-                        placeholder="Email content..."
-                        rows={6}
-                      />
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button 
-                        onClick={handleSendEmail} 
-                        disabled={sendEmailMutation.isPending}
-                        className="flex-1"
-                      >
-                        {sendEmailMutation.isPending ? "Sending..." : t("send")}
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setIsEmailDialogOpen(false)}
-                        className="flex-1"
-                      >
-                        {t("cancel")}
-                      </Button>
-                    </div>
+                    )}
                   </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-        </header>
 
-        <div className="p-6">
-          {/* Email History Cards */}
-          <div className="space-y-6">
-            {emailsLoading ? (
-              <div className="text-center py-12">
-                <div className="text-gray-500">Loading emails...</div>
-              </div>
-            ) : emails?.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-gray-500">No emails sent yet. Email history will appear here once emails are sent to candidates.</div>
-              </div>
-            ) : (
-              // Display email cards with full details
-              (emails?.length ? emails : mockEmails).map((email, index) => {
-                const emailId = email.id || `mock-${index}`;
-                const isExpanded = expandedEmails.has(emailId);
+                  <div>
+                    <Label className="text-sm">Email Type</Label>
+                    <Select value={emailForm.emailType} onValueChange={(value) => setEmailForm({ ...emailForm, emailType: value })}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="follow-up">Follow-up</SelectItem>
+                        <SelectItem value="interview">Interview Invitation</SelectItem>
+                        <SelectItem value="rejection">Rejection</SelectItem>
+                        <SelectItem value="offer">Job Offer</SelectItem>
+                        <SelectItem value="general">General</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm">Subject</Label>
+                    <Input
+                      placeholder="Email subject..."
+                      value={emailForm.subject}
+                      onChange={(e) => setEmailForm({ ...emailForm, subject: e.target.value })}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-sm">Message</Label>
+                    <Textarea
+                      placeholder="Type your message here..."
+                      value={emailForm.content}
+                      onChange={(e) => setEmailForm({ ...emailForm, content: e.target.value })}
+                      rows={6}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" size="sm" onClick={() => setIsEmailDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button size="sm" onClick={handleSendEmail} disabled={sendEmailMutation.isPending}>
+                      {sendEmailMutation.isPending ? (
+                        <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                      ) : (
+                        <Send className="w-3 h-3 mr-1" />
+                      )}
+                      Send Email
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Emails List */}
+          {emailsLoading ? (
+            <div className="text-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-500" />
+              <div className="text-gray-500 mt-2">Loading emails...</div>
+            </div>
+          ) : !emails || emails.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 sm:p-8 text-center">
+                <Mail className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No emails sent</h3>
+                <p className="text-sm sm:text-base text-gray-500 mb-4">
+                  Send your first email to a candidate to get started.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3 sm:space-y-4">
+              {emails.map((email) => {
+                const candidate = candidates?.find(c => c.id === email.candidateId);
+                const isExpanded = expandedEmails.has(email.id);
                 
                 return (
-                  <Card key={emailId} className="overflow-hidden">
-                    <CardContent className="p-0">
-                      {/* Email Header */}
-                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b">
+                  <Card key={email.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="flex flex-col space-y-3">
+                        {/* Header Row */}
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-4">
-                            <Avatar className="w-12 h-12">
-                              <AvatarFallback className="bg-blue-100 text-blue-600">
-                                {((email as any).candidateName || "Unknown").split(' ').map((n: string) => n[0]).join('')}
+                          <div className="flex items-center space-x-3 flex-1 min-w-0">
+                            <Avatar className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
+                              <AvatarFallback className="text-sm sm:text-base">
+                                {candidate ? getInitials(candidate.fullName) : 'NA'}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <h3 className="text-lg font-semibold text-gray-900">
-                                {email.subject}
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm sm:text-base font-medium text-gray-900 truncate">
+                                {candidate?.fullName || 'Unknown Candidate'}
                               </h3>
-                              <p className="text-sm text-gray-600">
-                                To: <span className="font-medium">{(email as any).candidateName || "Unknown Candidate"}</span>
+                              <p className="text-xs sm:text-sm text-gray-500 truncate">
+                                {candidate?.email || 'N/A'}
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-3">
+                          <div className="flex-shrink-0">
                             {getStatusBadge(email.status)}
-                            {getTypeBadge((email as any).type || (email as any).emailType)}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => toggleEmailExpansion(emailId)}
-                              className="ml-2"
-                            >
-                              {isExpanded ? "Show Less" : "Show More"}
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => handleDeleteEmail(emailId, email.subject)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                              disabled={deletingEmailId === emailId}
-                              title={t("deleteEmail")}
-                            >
-                              {deletingEmailId === emailId ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="w-4 h-4" />
-                              )}
-                            </Button>
                           </div>
+                        </div>
+
+                        {/* Email Details */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-medium text-gray-900 truncate flex-1">
+                              {email.subject}
+                            </h4>
+                            <div className="flex items-center space-x-2 text-xs text-gray-500 flex-shrink-0 ml-2">
+                              <Calendar className="w-3 h-3" />
+                              <span>{new Date(email.sentAt || email.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2 text-xs text-gray-500">
+                            <MessageSquare className="w-3 h-3" />
+                            <span className="capitalize">{email.emailType}</span>
+                          </div>
+                        </div>
+
+                        {/* Email Content */}
+                        <div className="border-t border-gray-100 pt-2">
+                          <div className={cn(
+                            "text-xs sm:text-sm text-gray-600",
+                            !isExpanded && "line-clamp-2"
+                          )}>
+                            {email.content}
+                          </div>
+                          {email.content.length > 100 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleEmailExpansion(email.id)}
+                              className="mt-2 h-6 text-xs text-blue-600 hover:text-blue-700 p-0"
+                            >
+                              {isExpanded ? 'Show less' : 'Show more'}
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex justify-end pt-2 border-t border-gray-100">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDeleteEmail(email)}
+                            className="flex items-center space-x-1 text-xs px-3 py-2 h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            disabled={deletingEmailId === email.id}
+                          >
+                            {deletingEmailId === email.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3 h-3" />
+                            )}
+                            <span>Delete</span>
+                          </Button>
                         </div>
                       </div>
-
-                      {/* Email Details - Only show when expanded */}
-                      {isExpanded && (
-                        <div className="px-6 py-4">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                            <div>
-                              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Recipient Email</label>
-                              <p className="text-sm font-medium text-gray-900 mt-1">
-                                {(email as any).candidateEmail || "candidate@email.com"}
-                              </p>
-                            </div>
-                            <div>
-                              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Sent Date</label>
-                              <p className="text-sm font-medium text-gray-900 mt-1">
-                                {email.sentAt || "Just now"}
-                              </p>
-                            </div>
-                            <div>
-                              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email Type</label>
-                              <p className="text-sm font-medium text-gray-900 mt-1">
-                                {((email as any).type || (email as any).emailType)?.charAt(0).toUpperCase() + ((email as any).type || (email as any).emailType)?.slice(1) || "General"}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Email Content */}
-                          <div>
-                            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email Content</label>
-                            <div className="mt-2 p-4 bg-gray-50 rounded-lg border">
-                              <div 
-                                className="text-sm text-gray-700"
-                                dangerouslySetInnerHTML={{ 
-                                  __html: email.content || "No content available" 
-                                }}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Email Footer */}
-                          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-                            <div className="flex items-center space-x-4">
-                              <span className="text-xs text-gray-500">
-                                Email ID: {emailId}
-                              </span>
-                              {(email as any).candidateId && (
-                                <span className="text-xs text-gray-500">
-                                  Candidate ID: {(email as any).candidateId}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => {
-                                  // Copy email content to clipboard
-                                  navigator.clipboard.writeText(email.content || "");
-                                  toast({
-                                    title: "Copied",
-                                    description: "Email content copied to clipboard",
-                                  });
-                                }}
-                              >
-                                Copy Content
-                              </Button>
-                              {(email as any).candidateEmail && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => {
-                                    // Open email client with pre-filled data
-                                    window.location.href = `mailto:${(email as any).candidateEmail}?subject=Re: ${email.subject}`;
-                                  }}
-                                >
-                                  Reply
-                                </Button>
-                              )}
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => handleDeleteEmail(emailId, email.subject)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                                disabled={deletingEmailId === emailId}
-                                title={t("deleteEmail")}
-                              >
-                                {deletingEmailId === emailId ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Trash2 className="w-4 h-4" />
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Collapsed view - Brief summary */}
-                      {!isExpanded && (
-                        <div className="px-6 py-3 bg-gray-50">
-                          <p className="text-sm text-gray-600">
-                            Sent to: <span className="font-medium">{(email as any).candidateEmail || "candidate@email.com"}</span> • {email.sentAt || "Just now"}
-                          </p>
-                          <div className="text-sm text-gray-500 mt-1 line-clamp-2">
-                            <div 
-                              dangerouslySetInnerHTML={{ 
-                                __html: (email.content?.replace(/<[^>]*>/g, '').substring(0, 150) || "No content available") + 
-                                        (email.content && email.content.replace(/<[^>]*>/g, '').length > 150 ? "..." : "")
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                 );
-              })
-            )}
-          </div>
+              })}
+            </div>
+          )}
         </div>
       </main>
     </div>

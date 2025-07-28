@@ -1,525 +1,444 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
-import Sidebar from "@/components/sidebar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, TrendingUp, Users, Award, ChevronRight, Trash2 } from "lucide-react";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { isUnauthorizedError } from "@/lib/authUtils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import Sidebar from "@/components/sidebar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Brain, 
+  TrendingUp, 
+  Star,
+  Award,
+  Target,
+  Filter,
+  Loader2,
+  Calendar,
+  User,
+  Building
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface Evaluation {
+  id: string;
+  candidateId: string;
+  overallScore: number;
+  technicalSkills: number;
+  experienceMatch: number;
+  education: number;
+  communicationSkills: number;
+  culturalFit: number;
+  recommendations: string;
+  evaluatedAt: string;
+  evaluator?: string;
+}
 
 interface Candidate {
   id: string;
   fullName: string;
   email: string;
   position: string;
-  resumeSummary?: string;
-}
-
-interface Assessment {
-  id: string;
-  candidateId: string;
-  overallScore: number;
-  skillsScore: number;
-  experienceScore: number;
-  educationScore: number;
-  aiInsights: string;
-  strengths: string[];
-  weaknesses: string[];
-  recommendations: string[];
-}
-
-interface JobDescription {
-  id: string;
-  title: string;
-  description: string;
-  requirements: string;
-  skills: string[];
-  experienceLevel: string;
-}
-
-interface EvaluationResult {
-  candidateId: string;
-  candidateName: string;
-  position: string;
-  fitScore: number;
-  matchingSkills: string[];
-  missingSkills: string[];
-  experienceMatch: number;
-  educationMatch: number;
-  overallRecommendation: string;
-  ranking: number;
 }
 
 export default function Evaluations() {
-  const { isAuthenticated, isLoading } = useAuth();
-  
-  // Add debugging for auth state
-  console.log("Auth state:", { isAuthenticated, isLoading });
-  const { t, language, isRTL } = useLanguage();
   const { toast } = useToast();
-  const [selectedPosition, setSelectedPosition] = useState<string>("all");
-  const [isEvaluating, setIsEvaluating] = useState(false);
+  const { isAuthenticated, isLoading } = useAuth();
+  const { t, isRTL } = useLanguage();
+  
+  const [search, setSearch] = useState("");
+  const [positionFilter, setPositionFilter] = useState("all");
+  const [scoreFilter, setScoreFilter] = useState("all");
+  const [expandedEvaluations, setExpandedEvaluations] = useState<Set<string>>(new Set());
 
-  // Fetch candidates
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      toast({
+        title: "Unauthorized",
+        description: "You are logged out. Logging in again...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/auth";
+      }, 500);
+    }
+  }, [isAuthenticated, isLoading, toast]);
+
+  const { data: evaluations, isLoading: evaluationsLoading } = useQuery<Evaluation[]>({
+    queryKey: ["/api/evaluations"],
+    retry: false,
+  });
+
   const { data: candidates } = useQuery<Candidate[]>({
     queryKey: ["/api/candidates"],
     retry: false,
   });
 
-  // Fetch assessments
-  const { data: assessments } = useQuery<Assessment[]>({
-    queryKey: ["/api/assessments"],
-    retry: false,
-  });
-
-  // Fetch job descriptions
-  const { data: jobDescriptions } = useQuery<JobDescription[]>({
-    queryKey: ["/api/job-descriptions"],
-    retry: false,
-  });
-
-  // Fetch evaluations
-  const { data: evaluations, refetch: refetchEvaluations } = useQuery<EvaluationResult[]>({
-    queryKey: ["/api/evaluations"],
-    retry: false,
-  });
-
-  // Run evaluation mutation
-  const evaluationMutation = useMutation({
-    mutationFn: async (position: string) => {
-      try {
-        console.log("Starting evaluation for position:", position);
-        const response = await fetch("/api/evaluations/run", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ position }),
-        });
-        
-        if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error("Please log in again to continue");
-          }
-          const contentType = response.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `Error ${response.status}`);
-          } else {
-            throw new Error(`Authentication error - please refresh and log in again`);
-          }
-        }
-        
-        const result = await response.json();
-        console.log("Evaluation response:", result);
-        return result;
-      } catch (error) {
-        console.error("Mutation function error:", error);
-        // Handle empty error objects
-        if (!error || (typeof error === 'object' && Object.keys(error).length === 0)) {
-          throw new Error("Unknown error occurred during evaluation");
-        }
-        throw error;
-      }
-    },
-    onSuccess: (data) => {
-      console.log("Evaluation success:", data);
-      if (data && (data.count || data.results)) {
-        toast({
-          title: "Success", 
-          description: `Evaluated ${data.count || data.results?.length || 0} candidates successfully`,
-        });
-        // Force refetch after a short delay
-        setTimeout(() => {
-          refetchEvaluations();
-        }, 500);
-      } else {
-        toast({
-          title: "Info",
-          description: "Evaluation completed but no results found",
-        });
-      }
-      setIsEvaluating(false);
-    },
-    onError: (error: any) => {
-      console.error("Evaluation error:", error);
-      let errorMessage = "Failed to run evaluation";
-      
-      if (error && typeof error === 'object') {
-        if (error.message) {
-          errorMessage = error.message;
-        } else if (error.toString && error.toString() !== '[object Object]') {
-          errorMessage = error.toString();
-        }
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      }
-      
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      setIsEvaluating(false);
-    },
-  });
-
-  const deleteEvaluationMutation = useMutation({
-    mutationFn: async (candidateId: string) => {
-      const response = await apiRequest("DELETE", `/api/evaluations/${candidateId}`);
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: isRTL ? "تم حذف التقييم" : "Evaluation Deleted",
-        description: isRTL ? "تم حذف التقييم بنجاح" : "Evaluation deleted successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/evaluations"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: isRTL ? "خطأ في الحذف" : "Delete Error",
-        description: error.message || (isRTL ? "فشل في حذف التقييم" : "Failed to delete evaluation"),
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleDeleteEvaluation = (candidateId: string, candidateName: string) => {
-    if (window.confirm(isRTL ? `هل أنت متأكد من حذف تقييم ${candidateName}؟` : `Are you sure you want to delete evaluation for ${candidateName}?`)) {
-      deleteEvaluationMutation.mutate(candidateId);
-    }
-  };
-
-  if (isLoading || !isAuthenticated) {
-    return <div>Loading...</div>;
-  }
-
-  const handleRunEvaluation = () => {
-    setIsEvaluating(true);
-    evaluationMutation.mutate(selectedPosition);
-  };
-
-  // Get unique positions
-  const positions = Array.from(new Set(candidates?.map(c => c.position) || []));
-
-  // Merge evaluation data with candidate and assessment info
-  const mergedEvaluations = evaluations?.map(evaluation => {
+  // Filter evaluations based on search and filters
+  const filteredEvaluations = evaluations?.filter(evaluation => {
     const candidate = candidates?.find(c => c.id === evaluation.candidateId);
-    const assessment = assessments?.find(a => a.candidateId === evaluation.candidateId);
-    return {
-      ...evaluation,
-      candidate,
-      assessment,
-    };
+    if (!candidate) return false;
+
+    const matchesSearch = candidate.fullName.toLowerCase().includes(search.toLowerCase()) ||
+                         candidate.email.toLowerCase().includes(search.toLowerCase()) ||
+                         candidate.position.toLowerCase().includes(search.toLowerCase());
+    
+    const matchesPosition = positionFilter === "all" || candidate.position === positionFilter;
+    
+    let matchesScore = true;
+    if (scoreFilter === "excellent" && evaluation.overallScore < 90) matchesScore = false;
+    if (scoreFilter === "good" && (evaluation.overallScore < 70 || evaluation.overallScore >= 90)) matchesScore = false;
+    if (scoreFilter === "average" && (evaluation.overallScore < 50 || evaluation.overallScore >= 70)) matchesScore = false;
+    if (scoreFilter === "poor" && evaluation.overallScore >= 50) matchesScore = false;
+    
+    return matchesSearch && matchesPosition && matchesScore;
   }) || [];
 
+  const uniquePositions = Array.from(new Set(candidates?.map(c => c.position) || []));
+
+  const toggleEvaluationExpansion = (evaluationId: string) => {
+    const newExpanded = new Set(expandedEvaluations);
+    if (newExpanded.has(evaluationId)) {
+      newExpanded.delete(evaluationId);
+    } else {
+      newExpanded.add(evaluationId);
+    }
+    setExpandedEvaluations(newExpanded);
+  };
+
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-green-600";
-    if (score >= 60) return "text-yellow-600";
+    if (score >= 90) return "text-green-600";
+    if (score >= 70) return "text-blue-600";
+    if (score >= 50) return "text-yellow-600";
     return "text-red-600";
   };
 
-  const getScoreBadgeVariant = (score: number) => {
-    if (score >= 80) return "default";
-    if (score >= 60) return "secondary";
-    return "destructive";
+  const getScoreBackground = (score: number) => {
+    if (score >= 90) return "bg-green-500";
+    if (score >= 70) return "bg-blue-500";
+    if (score >= 50) return "bg-yellow-500";
+    return "bg-red-500";
   };
 
+  const getScoreBadge = (score: number) => {
+    if (score >= 90) return { label: "Excellent", variant: "default" as const };
+    if (score >= 70) return { label: "Good", variant: "secondary" as const };
+    if (score >= 50) return { label: "Average", variant: "outline" as const };
+    return { label: "Poor", variant: "destructive" as const };
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Calculate statistics
+  const stats = {
+    total: filteredEvaluations.length,
+    avgScore: filteredEvaluations.length > 0 
+      ? Math.round(filteredEvaluations.reduce((acc, e) => acc + e.overallScore, 0) / filteredEvaluations.length)
+      : 0,
+    excellent: filteredEvaluations.filter(e => e.overallScore >= 90).length,
+    recommended: filteredEvaluations.filter(e => e.recommendations.toLowerCase().includes('recommend')).length
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-border" />
+      </div>
+    );
+  }
+
   return (
-    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${isRTL ? 'rtl' : 'ltr'}`}>
+    <div className={cn("flex min-h-screen bg-gray-50", isRTL ? "flex-row-reverse" : "flex-row")}>
       <Sidebar />
       
-      <div className={`${isRTL ? 'mr-64' : 'ml-64'} p-8`}>
-        <div className="max-w-7xl mx-auto">
+      <main className={cn(
+        "flex-1 min-w-0 transition-all duration-200",
+        isRTL ? "lg:mr-64" : "lg:ml-64"
+      )}>
+        <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              {t("candidateEvaluations")}
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              {t("aiPoweredEvaluationDescription")}
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
+                {t("evaluations")}
+              </h1>
+              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
+                Comprehensive candidate evaluation results and insights
+              </p>
+            </div>
           </div>
 
-          {/* Controls */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                {t("evaluationControls")}
+          {/* Stats Cards */}
+          {evaluations && evaluations.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <Card>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Brain className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-500">Total Evaluations</p>
+                      <p className="text-lg sm:text-xl font-bold">{stats.total}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <TrendingUp className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-500">Avg Score</p>
+                      <p className="text-lg sm:text-xl font-bold">{stats.avgScore}%</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-yellow-100 rounded-lg">
+                      <Star className="w-4 h-4 text-yellow-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-500">Excellent</p>
+                      <p className="text-lg sm:text-xl font-bold">{stats.excellent}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <Award className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-500">Recommended</p>
+                      <p className="text-lg sm:text-xl font-bold">{stats.recommended}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Search and Filters */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                <Filter className="w-4 h-4" />
+                Search & Filters
               </CardTitle>
-              <CardDescription>
-                {t("selectPositionEvaluate")}
-              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4">
-                <div className="flex-1 max-w-xs">
-                  <Select value={selectedPosition} onValueChange={setSelectedPosition}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("selectPosition")} />
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <Label className="text-sm">Search</Label>
+                  <Input
+                    placeholder="Search by name, email, or position..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm">Position</Label>
+                  <Select value={positionFilter} onValueChange={setPositionFilter}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Filter by position" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">{t("allPositions")}</SelectItem>
-                      {positions.map((position) => (
+                      <SelectItem value="all">All Positions</SelectItem>
+                      {uniquePositions.map(position => (
                         <SelectItem key={position} value={position}>
-                          {position.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          {position.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <Button 
-                  onClick={handleRunEvaluation}
-                  disabled={isEvaluating || evaluationMutation.isPending}
-                  className="gap-2"
-                >
-                  {isEvaluating || evaluationMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Award className="h-4 w-4" />
-                  )}
-                  {isEvaluating ? t("evaluating") : t("runEvaluation")}
-                </Button>
+                <div>
+                  <Label className="text-sm">Score Range</Label>
+                  <Select value={scoreFilter} onValueChange={setScoreFilter}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Filter by score" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Scores</SelectItem>
+                      <SelectItem value="excellent">Excellent (90-100%)</SelectItem>
+                      <SelectItem value="good">Good (70-89%)</SelectItem>
+                      <SelectItem value="average">Average (50-69%)</SelectItem>
+                      <SelectItem value="poor">Poor (0-49%)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Statistics */}
-          {evaluations && evaluations.length > 0 && (
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                      <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{t("totalEvaluated")}</p>
-                      <p className="text-2xl font-bold">{evaluations.length}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
-                      <Award className="h-6 w-6 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{t("topCandidates")}</p>
-                      <p className="text-2xl font-bold">
-                        {evaluations.filter(e => e.fitScore >= 80).length}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                      <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{t("avgFitScore")}</p>
-                      <p className="text-2xl font-bold">
-                        {Math.round(evaluations.reduce((acc, e) => acc + e.fitScore, 0) / evaluations.length)}%
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Evaluations List */}
+          {evaluationsLoading ? (
+            <div className="text-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-500" />
+              <div className="text-gray-500 mt-2">Loading evaluations...</div>
             </div>
-          )}
-
-          {/* Evaluation Results */}
-          {mergedEvaluations.length > 0 ? (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                {t("evaluationResults")}
-              </h2>
-              
-              {mergedEvaluations.map((evaluation, index) => (
-                <Card key={`evaluation-${evaluation.candidateId}-${index}`} className="overflow-hidden">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center justify-center w-8 h-8 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full text-sm font-bold">
-                            #{evaluation.ranking}
-                          </div>
-                          <Avatar className="w-12 h-12">
-                            <AvatarFallback>
-                              {evaluation.candidateName.split(' ').map((n: string) => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                            {evaluation.candidateName}
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {evaluation.position.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              {t("fitScore")}
-                            </span>
-                            <Badge variant={getScoreBadgeVariant(evaluation.fitScore)}>
-                              {evaluation.fitScore}%
-                            </Badge>
-                          </div>
-                          <Progress value={evaluation.fitScore} className="w-24" />
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteEvaluation(evaluation.candidateId, evaluation.candidateName)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                          disabled={deleteEvaluationMutation.isPending}
-                        >
-                          {deleteEvaluationMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-4 mb-4">
-                      <div>
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                          {t("experienceMatch")}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <Progress value={evaluation.experienceMatch} className="flex-1" />
-                          <span className={`text-sm font-medium ${getScoreColor(evaluation.experienceMatch)}`}>
-                            {evaluation.experienceMatch}%
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                          {t("educationMatch")}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <Progress value={evaluation.educationMatch} className="flex-1" />
-                          <span className={`text-sm font-medium ${getScoreColor(evaluation.educationMatch)}`}>
-                            {evaluation.educationMatch}%
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                          {t("skillsMatch")}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <Progress value={(evaluation.matchingSkills.length / (evaluation.matchingSkills.length + evaluation.missingSkills.length)) * 100} className="flex-1" />
-                          <span className="text-sm font-medium">
-                            {evaluation.matchingSkills.length}/{evaluation.matchingSkills.length + evaluation.missingSkills.length}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                          {t("matchingSkills")}
-                        </p>
-                        <div className="flex flex-wrap gap-1">
-                          {evaluation.matchingSkills.slice(0, 5).map((skill, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-xs">
-                              {skill}
-                            </Badge>
-                          ))}
-                          {evaluation.matchingSkills.length > 5 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{evaluation.matchingSkills.length - 5} more
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                          {t("missingSkills")}
-                        </p>
-                        <div className="flex flex-wrap gap-1">
-                          {evaluation.missingSkills.slice(0, 5).map((skill, idx) => (
-                            <Badge key={idx} variant="destructive" className="text-xs">
-                              {skill}
-                            </Badge>
-                          ))}
-                          {evaluation.missingSkills.length > 5 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{evaluation.missingSkills.length - 5} more
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="border-t pt-4">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        {t("aiRecommendation")}
-                      </p>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        {evaluation.overallRecommendation}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
+          ) : !filteredEvaluations || filteredEvaluations.length === 0 ? (
             <Card>
-              <CardContent className="p-8 text-center">
-                <Award className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  {t("noEvaluationsAvailable")}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  {t("runEvaluationMessage")}
+              <CardContent className="p-6 sm:p-8 text-center">
+                <Brain className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No evaluations found</h3>
+                <p className="text-sm sm:text-base text-gray-500 mb-4">
+                  {search || positionFilter !== "all" || scoreFilter !== "all"
+                    ? "Try adjusting your search filters to see more evaluations."
+                    : "Evaluations will appear here once candidates have been thoroughly assessed."}
                 </p>
-                <Button onClick={handleRunEvaluation} disabled={isEvaluating}>
-                  {isEvaluating ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      {t("evaluating")}
-                    </>
-                  ) : (
-                    <>
-                      <Award className="h-4 w-4 mr-2" />
-                      {t("startEvaluation")}
-                    </>
-                  )}
-                </Button>
               </CardContent>
             </Card>
+          ) : (
+            <div className="space-y-3 sm:space-y-4">
+              {filteredEvaluations.map((evaluation) => {
+                const candidate = candidates?.find(c => c.id === evaluation.candidateId);
+                const isExpanded = expandedEvaluations.has(evaluation.id);
+                const scoreBadge = getScoreBadge(evaluation.overallScore);
+                
+                return (
+                  <Card key={evaluation.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="flex flex-col space-y-3">
+                        {/* Header Row */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3 flex-1 min-w-0">
+                            <Avatar className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
+                              <AvatarFallback className="text-sm sm:text-base">
+                                {candidate ? getInitials(candidate.fullName) : 'NA'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm sm:text-base font-medium text-gray-900 truncate">
+                                {candidate?.fullName || 'Unknown Candidate'}
+                              </h3>
+                              <p className="text-xs sm:text-sm text-gray-500 truncate">
+                                {candidate?.position || 'N/A'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2 flex-shrink-0">
+                            <Badge variant={scoreBadge.variant} className="text-xs">
+                              {scoreBadge.label}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* Overall Score */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-700">Overall Score</span>
+                            <span className={cn("text-lg font-bold", getScoreColor(evaluation.overallScore))}>
+                              {evaluation.overallScore}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className={cn("h-2 rounded-full transition-all", getScoreBackground(evaluation.overallScore))}
+                              style={{ width: `${evaluation.overallScore}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Skills Breakdown */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs sm:text-sm">
+                          <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                            <span className="text-gray-600">Technical</span>
+                            <span className="font-medium">{evaluation.technicalSkills}%</span>
+                          </div>
+                          <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                            <span className="text-gray-600">Experience</span>
+                            <span className="font-medium">{evaluation.experienceMatch}%</span>
+                          </div>
+                          <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                            <span className="text-gray-600">Education</span>
+                            <span className="font-medium">{evaluation.education}%</span>
+                          </div>
+                          <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                            <span className="text-gray-600">Communication</span>
+                            <span className="font-medium">{evaluation.communicationSkills}%</span>
+                          </div>
+                          <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                            <span className="text-gray-600">Cultural Fit</span>
+                            <span className="font-medium">{evaluation.culturalFit}%</span>
+                          </div>
+                        </div>
+
+                        {/* Recommendations */}
+                        {evaluation.recommendations && (
+                          <div className="border-t border-gray-100 pt-3">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <Award className="w-4 h-4 text-purple-500" />
+                              <span className="text-sm font-medium text-gray-700">Recommendations</span>
+                            </div>
+                            <div className={cn(
+                              "text-xs sm:text-sm text-gray-600 bg-purple-50 p-2 rounded",
+                              !isExpanded && "line-clamp-2"
+                            )}>
+                              {evaluation.recommendations}
+                            </div>
+                            {evaluation.recommendations.length > 150 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleEvaluationExpansion(evaluation.id)}
+                                className="mt-2 h-6 text-xs text-purple-600 hover:text-purple-700 p-0"
+                              >
+                                {isExpanded ? 'Show less' : 'Show more'}
+                              </Button>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Evaluation Date and Evaluator */}
+                        <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
+                          <div className="flex items-center space-x-2">
+                            <Calendar className="w-3 h-3" />
+                            <span>Evaluated: {new Date(evaluation.evaluatedAt).toLocaleDateString()}</span>
+                          </div>
+                          {evaluation.evaluator && (
+                            <div className="flex items-center space-x-2">
+                              <User className="w-3 h-3" />
+                              <span>By: {evaluation.evaluator}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }
