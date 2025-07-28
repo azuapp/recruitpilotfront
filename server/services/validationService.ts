@@ -20,11 +20,12 @@ export const userValidationSchema = z.object({
 
 export const interviewValidationSchema = z.object({
   candidateId: z.string().uuid('Invalid candidate ID'),
-  scheduledDate: z.string().datetime('Invalid date format'),
-  type: z.enum(['phone', 'video', 'in-person']),
-  duration: z.number().min(15, 'Duration must be at least 15 minutes'),
-  interviewerName: z.string().min(2, 'Interviewer name is required'),
-  location: z.string().optional(),
+  scheduledDate: z.string().refine((date) => {
+    // Accept both datetime-local format and ISO strings
+    const parsed = new Date(date);
+    return !isNaN(parsed.getTime());
+  }, 'Invalid date format'),
+  interviewType: z.enum(['phone', 'video', 'in-person']),
   notes: z.string().optional(),
 });
 
