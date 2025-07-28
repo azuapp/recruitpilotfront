@@ -68,26 +68,10 @@ export default function Users() {
 
   const createUserMutation = useMutation({
     mutationFn: async (data: typeof userForm) => {
-      console.log("Creating user with data:", data);
       const res = await apiRequest("POST", "/api/users", data);
-      console.log("Response status:", res.status);
-      console.log("Response headers:", res.headers);
-      
-      const text = await res.text();
-      console.log("Raw response text:", text);
-      
-      try {
-        const result = JSON.parse(text);
-        console.log("Parsed user creation result:", result);
-        return result;
-      } catch (e) {
-        console.error("JSON parse error:", e);
-        console.error("Failed to parse response:", text);
-        throw new Error(`Invalid JSON response: ${text}`);
-      }
+      return await res.json();
     },
     onSuccess: (data) => {
-      console.log("User creation success, invalidating cache and closing dialog");
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setIsCreateDialogOpen(false);
       resetForm();
@@ -97,7 +81,6 @@ export default function Users() {
       });
     },
     onError: (error: Error) => {
-      console.error("User creation error:", error);
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -200,7 +183,6 @@ export default function Users() {
   };
 
   const handleCreateUser = () => {
-    console.log("Handle create user called with form:", userForm);
     if (!userForm.email || !userForm.password || !userForm.firstName || !userForm.lastName) {
       toast({
         title: "Error",
@@ -209,7 +191,6 @@ export default function Users() {
       });
       return;
     }
-    console.log("Form validation passed, calling mutation");
     createUserMutation.mutate(userForm);
   };
 
