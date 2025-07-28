@@ -37,14 +37,19 @@ export const emailValidationSchema = z.object({
 });
 
 export const jobDescriptionValidationSchema = z.object({
-  title: z.string().min(2, 'Job title is required'),
+  title: z.string().min(2, 'Job title is required').optional(),
   position: z.string().min(2, 'Position is required'),
-  description: z.string().min(50, 'Description must be at least 50 characters'),
-  requirements: z.string().min(20, 'Requirements must be specified'),
+  description: z.string().min(50, 'Description must be at least 50 characters').optional(),
+  responsibilities: z.string().optional(),
+  requirements: z.string().min(20, 'Requirements must be specified').optional(),
+  requiredExperience: z.string().optional(),
   benefits: z.string().optional(),
-  location: z.string().min(2, 'Location is required'),
+  skills: z.string().min(5, 'Skills must be specified'),
+  experienceLevel: z.string().optional(),
+  location: z.string().optional(),
   salaryMin: z.number().min(0, 'Minimum salary must be positive').optional(),
   salaryMax: z.number().min(0, 'Maximum salary must be positive').optional(),
+  notes: z.string().optional(),
   isActive: z.boolean().optional().default(true),
 });
 

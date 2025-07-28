@@ -602,67 +602,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // Job Descriptions routes
-  app.get('/api/job-descriptions', isAuthenticated, async (req, res) => {
-    try {
-      const jobDescriptions = await storage.getJobDescriptions();
-      res.json(jobDescriptions);
-    } catch (error) {
-      console.error("Error fetching job descriptions:", error);
-      res.status(500).json({ message: "Failed to fetch job descriptions" });
-    }
-  });
-
-  app.post('/api/job-descriptions', isAuthenticated, isAdmin, async (req, res) => {
-    try {
-      const validatedData = insertJobDescriptionSchema.parse(req.body);
-      const jobDescription = await storage.createJobDescription(validatedData);
-      res.status(201).json(jobDescription);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: error.errors });
-      }
-      console.error("Error creating job description:", error);
-      res.status(500).json({ message: "Failed to create job description" });
-    }
-  });
-
-  app.get('/api/job-descriptions/:id', isAuthenticated, async (req, res) => {
-    try {
-      const jobDescription = await storage.getJobDescriptionById(req.params.id);
-      if (!jobDescription) {
-        return res.status(404).json({ message: "Job description not found" });
-      }
-      res.json(jobDescription);
-    } catch (error) {
-      console.error("Error fetching job description:", error);
-      res.status(500).json({ message: "Failed to fetch job description" });
-    }
-  });
-
-  app.put('/api/job-descriptions/:id', isAuthenticated, isAdmin, async (req, res) => {
-    try {
-      const validatedData = insertJobDescriptionSchema.partial().parse(req.body);
-      const jobDescription = await storage.updateJobDescription(req.params.id, validatedData);
-      res.json(jobDescription);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: error.errors });
-      }
-      console.error("Error updating job description:", error);
-      res.status(500).json({ message: "Failed to update job description" });
-    }
-  });
-
-  app.delete('/api/job-descriptions/:id', isAuthenticated, isAdmin, async (req, res) => {
-    try {
-      await storage.deleteJobDescription(req.params.id);
-      res.status(200).json({ message: "Job description deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting job description:", error);
-      res.status(500).json({ message: "Failed to delete job description" });
-    }
-  });
+  // Job Descriptions routes are now handled by jobRoutes module
 
   // Job Fit Scores routes
   app.post('/api/candidates/:candidateId/calculate-fit-score', isAuthenticated, async (req, res) => {
