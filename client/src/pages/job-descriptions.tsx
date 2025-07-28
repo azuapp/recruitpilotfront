@@ -289,15 +289,15 @@ export default function JobDescriptions() {
       <Sidebar />
       
       <main className={cn(
-        "flex-1 min-h-screen",
+        "flex-1 min-h-screen w-full",
         isRTL ? "lg:mr-64" : "lg:ml-64"
       )}>
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 p-4 sm:p-6 mt-16 lg:mt-0">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{t('jobDescriptions')}</h2>
-              <p className="text-gray-600 mt-1 text-sm sm:text-base">{t('manageJobRequirements')}</p>
+        <header className="bg-white shadow-sm border-b border-gray-200 p-3 sm:p-4 lg:p-6 mt-14 lg:mt-0">
+          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">{t('jobDescriptions')}</h2>
+              <p className="text-gray-600 mt-1 text-xs sm:text-sm lg:text-base">{t('manageJobRequirements')}</p>
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>

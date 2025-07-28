@@ -332,34 +332,34 @@ export default function Candidates() {
       <Sidebar />
       
       <main className={cn(
-        "flex-1 min-h-screen",
+        "flex-1 min-h-screen w-full",
         isRTL ? "lg:mr-64" : "lg:ml-64"
       )}>
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 p-4 sm:p-6 mt-16 lg:mt-0">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{t("candidates")}</h2>
-              <p className="text-gray-600 mt-1 text-sm sm:text-base">{t("manageReviewApplications")}</p>
+        <header className="bg-white shadow-sm border-b border-gray-200 p-3 sm:p-4 lg:p-6 mt-14 lg:mt-0">
+          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">{t("candidates")}</h2>
+              <p className="text-gray-600 mt-1 text-xs sm:text-sm lg:text-base">{t("manageReviewApplications")}</p>
             </div>
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-              <Button variant="outline" onClick={exportCandidates} className="w-full sm:w-auto">
-                <Download className="w-4 h-4 mr-2" />
-                {t("export")}
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 flex-shrink-0">
+              <Button variant="outline" onClick={exportCandidates} className="w-full sm:w-auto text-sm px-4 py-2">
+                <Download className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="truncate">{t("export")}</span>
               </Button>
-              <Button className="w-full sm:w-auto">
-                <Filter className="w-4 h-4 mr-2" />
-                {t("filter")}
+              <Button className="w-full sm:w-auto text-sm px-4 py-2">
+                <Filter className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="truncate">{t("filter")}</span>
               </Button>
             </div>
           </div>
         </header>
 
-        <div className="p-4 sm:p-6">
+        <div className="p-3 sm:p-4 lg:p-6">
           {/* Filters */}
-          <Card className="mb-6">
-            <CardContent className="p-4 sm:p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="mb-4 sm:mb-6">
+            <CardContent className="p-3 sm:p-4 lg:p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
                 <div>
                   <Label>{t("search")}</Label>
                   <Input

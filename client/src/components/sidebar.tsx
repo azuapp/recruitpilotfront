@@ -171,24 +171,25 @@ export default function Sidebar() {
     <>
       {/* Mobile Menu Button */}
       <div className={cn(
-        "lg:hidden fixed top-4 z-50",
-        isRTL ? "right-4" : "left-4"
+        "lg:hidden fixed top-3 z-50",
+        isRTL ? "right-3" : "left-3"
       )}>
         <Button
           data-sidebar="mobile-button"
           variant="outline"
-          size="sm"
+          size="default"
           onClick={toggleMobileMenu}
           className={cn(
-            "bg-white shadow-md border-2 border-gray-300 hover:bg-gray-50 transition-all duration-200",
+            "bg-white shadow-lg border-2 border-gray-300 hover:bg-gray-50 transition-all duration-200",
+            "min-h-[44px] min-w-[44px] p-3", // Better touch targets
             isMobileMenuOpen && "bg-gray-50 border-gray-400"
           )}
           aria-label="Toggle mobile menu"
         >
           {isMobileMenuOpen ? (
-            <X className="h-5 w-5" />
+            <X className="h-6 w-6" />
           ) : (
-            <Menu className="h-5 w-5" />
+            <Menu className="h-6 w-6" />
           )}
         </Button>
       </div>
@@ -212,7 +213,7 @@ export default function Sidebar() {
       {/* Mobile Sidebar - Slide overlay */}
       <nav
         className={cn(
-          "lg:hidden fixed top-0 w-64 h-screen bg-white shadow-lg z-40 overflow-y-auto transition-transform duration-300 ease-in-out",
+          "lg:hidden fixed top-0 w-72 max-w-[85vw] h-screen bg-white shadow-xl z-40 overflow-y-auto transition-transform duration-300 ease-in-out",
           isRTL ? "right-0" : "left-0",
           isMobileMenuOpen 
             ? "translate-x-0" 
@@ -221,7 +222,9 @@ export default function Sidebar() {
               : "-translate-x-full"
         )}
       >
-        {renderSidebarContent()}
+        <div className="pb-safe-bottom">
+          {renderSidebarContent()}
+        </div>
       </nav>
     </>
   );

@@ -58,3 +58,49 @@
     font-family: 'Inter', sans-serif;
   }
 }
+
+/* Mobile-first responsive enhancements */
+@media (max-width: 640px) {
+  .mobile-scroll {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  
+  .mobile-card {
+    margin: 0.5rem;
+    border-radius: 0.75rem;
+  }
+  
+  .mobile-text {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+  
+  .mobile-button {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Touch-friendly interactions */
+@media (max-width: 1024px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .touch-button {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Safe area support for mobile devices */
+.pb-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pt-safe-top {
+  padding-top: env(safe-area-inset-top);
+}

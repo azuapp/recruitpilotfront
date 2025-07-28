@@ -60,97 +60,97 @@ export default function Home() {
       <Sidebar />
       
       <main className={cn(
-        "flex-1 min-h-screen",
+        "flex-1 min-h-screen w-full",
         isRTL ? "lg:mr-64" : "lg:ml-64"
       )}>
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 p-4 sm:p-6 mt-16 lg:mt-0">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{t("dashboard")}</h2>
-              <p className="text-gray-600 mt-1 text-sm sm:text-base">{t("overviewDescription")}</p>
+        <header className="bg-white shadow-sm border-b border-gray-200 p-3 sm:p-4 lg:p-6 mt-14 lg:mt-0">
+          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">{t("dashboard")}</h2>
+              <p className="text-gray-600 mt-1 text-xs sm:text-sm lg:text-base">{t("overviewDescription")}</p>
             </div>
-            <div className="flex space-x-3">
+            <div className="flex-shrink-0">
               <Button 
                 onClick={() => setLocation("/job-descriptions")}
-                className="bg-primary text-white hover:bg-blue-700 w-full sm:w-auto"
+                className="bg-primary text-white hover:bg-blue-700 w-full sm:w-auto text-sm px-4 py-2"
               >
-                <Users className="w-4 h-4 mr-2" />
-                {t("newPosition")}
+                <Users className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="truncate">{t("newPosition")}</span>
               </Button>
             </div>
           </div>
         </header>
 
-        <div className="p-4 sm:p-6 space-y-6">
+        <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            <Card>
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">{t("totalCandidates")}</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+            <Card className="h-full">
+              <CardContent className="p-3 sm:p-4 lg:p-6">
+                <div className="flex items-center justify-between h-full">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{t("totalCandidates")}</p>
+                    <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mt-1 sm:mt-2">
                       {statsLoading ? "..." : stats?.totalCandidates || 0}
                     </p>
-                    <p className="text-sm text-accent mt-1">
-                      <TrendingUp className="w-3 h-3 inline mr-1" />
-                      {t("growing")}
+                    <p className="text-xs sm:text-sm text-accent mt-1 flex items-center">
+                      <TrendingUp className="w-3 h-3 mr-1 flex-shrink-0" />
+                      <span className="truncate">{t("growing")}</span>
                     </p>
                   </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Users className="text-primary text-lg sm:text-xl" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Users className="text-primary text-base sm:text-lg lg:text-xl" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">{t("activePositions")}</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">
+            <Card className="h-full">
+              <CardContent className="p-3 sm:p-4 lg:p-6">
+                <div className="flex items-center justify-between h-full">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{t("activePositions")}</p>
+                    <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mt-1 sm:mt-2">
                       {statsLoading ? "..." : stats?.activePositions || 0}
                     </p>
-                    <p className="text-sm text-gray-500 mt-1">{t("acrossDepartments")}</p>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1 truncate">{t("acrossDepartments")}</p>
                   </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Briefcase className="text-accent text-lg sm:text-xl" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Briefcase className="text-accent text-base sm:text-lg lg:text-xl" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">{t("interviewsScheduled")}</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">
+            <Card className="h-full">
+              <CardContent className="p-3 sm:p-4 lg:p-6">
+                <div className="flex items-center justify-between h-full">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{t("interviewsScheduled")}</p>
+                    <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mt-1 sm:mt-2">
                       {statsLoading ? "..." : stats?.interviews || 0}
                     </p>
-                    <p className="text-sm text-amber-600 mt-1">{t("thisWeek")}</p>
+                    <p className="text-xs sm:text-sm text-amber-600 mt-1 truncate">{t("thisWeek")}</p>
                   </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                    <Calendar className="text-amber-600 text-lg sm:text-xl" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Calendar className="text-amber-600 text-base sm:text-lg lg:text-xl" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">{t("aiAssessments")}</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">
+            <Card className="h-full">
+              <CardContent className="p-3 sm:p-4 lg:p-6">
+                <div className="flex items-center justify-between h-full">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{t("aiAssessments")}</p>
+                    <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mt-1 sm:mt-2">
                       {statsLoading ? "..." : stats?.assessments || 0}
                     </p>
-                    <p className="text-sm text-purple-600 mt-1">{t("completed")}</p>
+                    <p className="text-xs sm:text-sm text-purple-600 mt-1 truncate">{t("completed")}</p>
                   </div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Brain className="text-purple-600 text-lg sm:text-xl" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Brain className="text-purple-600 text-base sm:text-lg lg:text-xl" />
                   </div>
                 </div>
               </CardContent>
@@ -158,12 +158,12 @@ export default function Home() {
           </div>
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             <div className="lg:col-span-2">
               <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("quickActions")}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CardContent className="p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">{t("quickActions")}</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <Button 
                       className="w-full justify-between bg-primary text-white hover:bg-blue-700"
                       onClick={() => window.location.href = '/assessments'}

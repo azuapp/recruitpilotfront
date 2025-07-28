@@ -115,13 +115,13 @@ export default function ApplicationForm() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-6 sm:py-12 px-3 sm:px-4">
         <div className="max-w-2xl mx-auto">
-          <Card className="text-center">
-            <CardContent className="p-8">
-              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Application Submitted Successfully!</h2>
-              <p className="text-gray-600">
+          <Card className="text-center mobile-card">
+            <CardContent className="p-6 sm:p-8">
+              <CheckCircle className="w-12 h-12 sm:w-16 sm:h-16 text-green-500 mx-auto mb-4" />
+              <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-4">Application Submitted Successfully!</h2>
+              <p className="text-sm sm:text-base text-gray-600">
                 Thank you for your application. We'll review your submission and get back to you within 3-5 business days.
               </p>
             </CardContent>
@@ -132,26 +132,26 @@ export default function ApplicationForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-6 sm:py-12 px-3 sm:px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
-              <Users className="text-white text-xl" />
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="flex items-center justify-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary rounded-xl flex items-center justify-center">
+              <Users className="text-white text-lg sm:text-xl" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">RecruitPro</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">RecruitPro</h1>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-2">Join Our Team</h2>
-          <p className="text-gray-600">Submit your application and let AI help us find the perfect match</p>
+          <h2 className="text-lg sm:text-2xl font-semibold text-gray-800 mb-2">Join Our Team</h2>
+          <p className="text-sm sm:text-base text-gray-600">Submit your application and let AI help us find the perfect match</p>
         </div>
 
         {/* Application Form */}
-        <Card className="shadow-xl">
-          <CardContent className="p-8">
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <Card className="shadow-xl mobile-card">
+          <CardContent className="p-4 sm:p-6 lg:p-8">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
               {/* Personal Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <Label htmlFor="fullName">Full Name *</Label>
                   <Input
