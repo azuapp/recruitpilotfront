@@ -6,6 +6,8 @@ import { sendEmail, getApplicationConfirmationEmail } from '../services/email';
 import { logger } from '../services/logger';
 import { AppError, asyncHandler } from '../services/errorHandler';
 import { processAssessment } from '../services/assessmentService';
+import fs from 'fs';
+import path from 'path';
 
 export const createCandidate = asyncHandler(async (req: Request, res: Response) => {
   logger.info('Creating new candidate application', { 
@@ -146,8 +148,6 @@ export const downloadCV = asyncHandler(async (req: Request, res: Response) => {
     throw new AppError('CV file not found', 404);
   }
 
-  const fs = require('fs');
-  const path = require('path');
   const filePath = path.resolve(candidate.cvFilePath);
   
   if (!fs.existsSync(filePath)) {
