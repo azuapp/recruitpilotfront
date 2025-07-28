@@ -198,6 +198,8 @@ const translations = {
     // Delete functionality
     deleteEvaluation: "Delete Evaluation",
     confirmDelete: "Are you sure you want to delete this evaluation?",
+    deleteCandidate: "Delete Candidate",
+    confirmDeleteCandidate: "Are you sure you want to delete this candidate? This action cannot be undone.",
   },
   ar: {
     // Navigation
@@ -387,6 +389,8 @@ const translations = {
     // Delete functionality
     deleteEvaluation: "حذف التقييم",
     confirmDelete: "هل أنت متأكد من حذف هذا التقييم؟",
+    deleteCandidate: "حذف المرشح",
+    confirmDeleteCandidate: "هل أنت متأكد من حذف هذا المرشح؟ هذا الإجراء لا يمكن التراجع عنه.",
   }
 };
 

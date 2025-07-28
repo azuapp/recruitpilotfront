@@ -68,6 +68,7 @@ export default function Candidates() {
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateWithAssessment | null>(null);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
+  const [deletingCandidateId, setDeletingCandidateId] = useState<string | null>(null);
 
   const exportCandidates = () => {
     if (!candidates || candidates.length === 0) {
@@ -269,10 +270,12 @@ export default function Candidates() {
   // Delete candidate mutation
   const deleteCandidateMutation = useMutation({
     mutationFn: async (candidateId: string) => {
+      setDeletingCandidateId(candidateId);
       const response = await apiRequest("DELETE", `/api/candidates/${candidateId}`);
       return response.json();
     },
     onSuccess: () => {
+      setDeletingCandidateId(null);
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
       toast({
         title: isRTL ? "تم حذف المرشح" : "Candidate Deleted",
@@ -280,6 +283,7 @@ export default function Candidates() {
       });
     },
     onError: (error: any) => {
+      setDeletingCandidateId(null);
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -301,8 +305,8 @@ export default function Candidates() {
 
   const handleDeleteCandidate = (candidate: CandidateWithAssessment) => {
     const confirmMessage = isRTL 
-      ? `هل أنت متأكد من حذف المرشح ${candidate.fullName}؟ هذا الإجراء لا يمكن التراجع عنه.`
-      : `Are you sure you want to delete ${candidate.fullName}? This action cannot be undone.`;
+      ? `${t("confirmDeleteCandidate")} (${candidate.fullName})`
+      : `${t("confirmDeleteCandidate")} (${candidate.fullName})`;
     
     if (window.confirm(confirmMessage)) {
       deleteCandidateMutation.mutate(candidate.id);
@@ -596,10 +600,10 @@ export default function Candidates() {
                                 size="sm"
                                 onClick={() => handleDeleteCandidate(candidate)}
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                                disabled={deleteCandidateMutation.isPending}
-                                title={isRTL ? "حذف المرشح" : "Delete Candidate"}
+                                disabled={deletingCandidateId === candidate.id}
+                                title={t("deleteCandidate")}
                               >
-                                {deleteCandidateMutation.isPending ? (
+                                {deletingCandidateId === candidate.id ? (
                                   <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
                                   <Trash2 className="w-4 h-4" />
