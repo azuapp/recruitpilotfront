@@ -1,19 +1,20 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { storage } from '../storage';
 import { asyncHandler } from '../services/errorHandler';
 import { requireAuth } from '../auth';
 import { logger } from '../services/logger';
+import { runAssessment } from '../services/assessmentService';
 
 const router = Router();
 
 // Get all assessments
-router.get('/assessments', requireAuth, asyncHandler(async (req, res) => {
+router.get('/assessments', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const assessments = await storage.getAssessments();
   res.json(assessments);
 }));
 
 // Get assessment by candidate ID
-router.get('/assessments/candidate/:candidateId', requireAuth, asyncHandler(async (req, res) => {
+router.get('/assessments/candidate/:candidateId', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { candidateId } = req.params;
   const assessment = await storage.getAssessmentByCandidateId(candidateId);
   
@@ -25,8 +26,7 @@ router.get('/assessments/candidate/:candidateId', requireAuth, asyncHandler(asyn
 }));
 
 // Run bulk assessments
-router.post('/assessments/bulk', requireAuth, asyncHandler(async (req, res) => {
-  const { runAssessment } = await import('../services/assessmentService');
+router.post('/assessments/bulk', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   
   logger.info('Starting bulk assessment process');
   
@@ -39,7 +39,8 @@ router.post('/assessments/bulk', requireAuth, asyncHandler(async (req, res) => {
       assessment.candidateId === candidate.id && 
       assessment.status === 'completed'
     );
-    return !hasValidAssessment && candidate.resumeSummary; // Only assess candidates with resume content
+    // Include candidates without valid assessments, regardless of resume summary
+    return !hasValidAssessment;
   });
 
   if (candidatesNeedingAssessment.length === 0) {
@@ -69,7 +70,7 @@ router.post('/assessments/bulk', requireAuth, asyncHandler(async (req, res) => {
         candidateId: candidate.id, 
         error 
       });
-      results.push({ candidateId: candidate.id, status: 'failed', error: error.message });
+      results.push({ candidateId: candidate.id, status: 'failed', error: error instanceof Error ? error.message : 'Unknown error' });
     }
   }
 
@@ -92,9 +93,8 @@ router.post('/assessments/bulk', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 // Trigger single assessment
-router.post('/assessments/:candidateId', requireAuth, asyncHandler(async (req, res) => {
+router.post('/assessments/:candidateId', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { candidateId } = req.params;
-  const { runAssessment } = await import('../services/assessmentService');
   
   logger.info(`Triggering assessment for candidate ${candidateId}`);
   
