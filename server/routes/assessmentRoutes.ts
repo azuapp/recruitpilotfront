@@ -108,4 +108,20 @@ router.post('/assessments/:candidateId', requireAuth, asyncHandler(async (req: R
   }
 }));
 
+// Delete assessment
+router.delete('/assessments/:id', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  
+  logger.info(`Deleting assessment ${id}`);
+  
+  const success = await storage.deleteAssessment(id);
+  
+  if (!success) {
+    return res.status(404).json({ message: 'Assessment not found' });
+  }
+  
+  logger.info(`Assessment ${id} deleted successfully`);
+  res.json({ message: 'Assessment deleted successfully' });
+}));
+
 export default router;

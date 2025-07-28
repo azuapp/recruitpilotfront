@@ -56,6 +56,7 @@ export interface IStorage {
   getAssessmentByCandidateId(candidateId: string): Promise<Assessment | undefined>;
   updateAssessment(id: string, updates: Partial<Assessment>): Promise<Assessment>;
   getAssessments(): Promise<Assessment[]>;
+  deleteAssessment(id: string): Promise<boolean>;
   
   // Interview operations
   createInterview(interview: InsertInterview): Promise<Interview>;
@@ -321,6 +322,11 @@ export class DatabaseStorage implements IStorage {
 
   async getAssessments(): Promise<Assessment[]> {
     return await db.select().from(assessments).orderBy(desc(assessments.createdAt));
+  }
+
+  async deleteAssessment(id: string): Promise<boolean> {
+    const result = await db.delete(assessments).where(eq(assessments.id, id));
+    return result.rowCount > 0;
   }
 
   // Interview operations

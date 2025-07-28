@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -15,7 +15,9 @@ import {
   TrendingUp, 
   Settings,
   Lightbulb,
-  Star
+  Star,
+  Trash2,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +37,9 @@ export default function Assessments() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
   const { t, isRTL } = useLanguage();
+  
+  // Delete assessment state
+  const [deletingAssessmentId, setDeletingAssessmentId] = useState<string | null>(null);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -55,6 +60,58 @@ export default function Assessments() {
     queryKey: ["/api/assessments"],
     retry: false,
   });
+
+  // Delete assessment mutation
+  const deleteAssessmentMutation = useMutation({
+    mutationFn: async (assessmentId: string) => {
+      const response = await apiRequest("DELETE", `/api/assessments/${assessmentId}`);
+      return response.json();
+    },
+    onMutate: async (assessmentId: string) => {
+      setDeletingAssessmentId(assessmentId);
+    },
+    onSuccess: (data, assessmentId) => {
+      setDeletingAssessmentId(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/assessments"] });
+      toast({
+        title: isRTL ? "تم حذف التقييم" : "Assessment Deleted",
+        description: isRTL ? "تم حذف التقييم بنجاح" : "Assessment deleted successfully",
+      });
+    },
+    onError: (error: any, assessmentId) => {
+      setDeletingAssessmentId(null);
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: isRTL ? "خطأ في الحذف" : "Delete Error",
+        description: error.message || (isRTL ? "فشل في حذف التقييم" : "Failed to delete assessment"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteAssessment = (assessmentId: string, candidateName: string) => {
+    if (deletingAssessmentId) {
+      return;
+    }
+    
+    const confirmMessage = isRTL 
+      ? `${t("confirmDeleteAssessment")} (${candidateName})`
+      : `${t("confirmDeleteAssessment")} (${candidateName})`;
+    
+    if (window.confirm(confirmMessage)) {
+      deleteAssessmentMutation.mutate(assessmentId);
+    }
+  };
 
   // Bulk assessment mutation
   const bulkAssessmentMutation = useMutation({
@@ -219,16 +276,32 @@ export default function Assessments() {
                             <h4 className="text-lg font-medium text-gray-900">
                               {assessment.candidateName}
                             </h4>
-                            <div className="flex items-center space-x-2">
-                              <div className="text-2xl font-bold text-green-600">
-                                {assessment.overallScore}%
+                            <div className="flex items-center space-x-3">
+                              <div className="flex items-center space-x-2">
+                                <div className="text-2xl font-bold text-green-600">
+                                  {assessment.overallScore}%
+                                </div>
+                                <div className="w-16 bg-gray-200 rounded-full h-3">
+                                  <div 
+                                    className="bg-green-500 h-3 rounded-full" 
+                                    style={{ width: `${assessment.overallScore}%` }}
+                                  />
+                                </div>
                               </div>
-                              <div className="w-16 bg-gray-200 rounded-full h-3">
-                                <div 
-                                  className="bg-green-500 h-3 rounded-full" 
-                                  style={{ width: `${assessment.overallScore}%` }}
-                                />
-                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteAssessment(assessment.id, assessment.candidateName)}
+                                disabled={deletingAssessmentId === assessment.id}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                title={t("deleteAssessment")}
+                              >
+                                {deletingAssessmentId === assessment.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4" />
+                                )}
+                              </Button>
                             </div>
                           </div>
                           <p className="text-sm text-gray-600 mb-4">
