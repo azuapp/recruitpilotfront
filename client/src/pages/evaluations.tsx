@@ -83,23 +83,36 @@ export default function Evaluations() {
 
   // Fetch evaluations
   const { data: evaluations, refetch: refetchEvaluations } = useQuery<EvaluationResult[]>({
-    queryKey: ["/api/evaluations", selectedPosition],
+    queryKey: ["/api/evaluations"],
     retry: false,
   });
 
   // Run evaluation mutation
   const evaluationMutation = useMutation({
     mutationFn: async (position: string) => {
-      const response = await apiRequest("POST", "/api/evaluations/run", { position });
-      const result = await response.json();
-      console.log("Evaluation response:", result);
-      return result;
+      try {
+        console.log("Starting evaluation for position:", position);
+        const response = await apiRequest("POST", "/api/evaluations/run", { position });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("API error response:", errorText);
+          throw new Error(`API Error: ${response.status} - ${errorText}`);
+        }
+        
+        const result = await response.json();
+        console.log("Evaluation response:", result);
+        return result;
+      } catch (error) {
+        console.error("Mutation function error:", error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
       console.log("Evaluation success:", data);
       toast({
-        title: "Success",
-        description: `Evaluated ${data.count || 0} candidates successfully`,
+        title: "Success", 
+        description: `Evaluated ${data.count || data.results?.length || 0} candidates successfully`,
       });
       // Force refetch after a short delay
       setTimeout(() => {
@@ -111,7 +124,7 @@ export default function Evaluations() {
       console.error("Evaluation error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to run evaluation",
         variant: "destructive",
       });
       setIsEvaluating(false);
