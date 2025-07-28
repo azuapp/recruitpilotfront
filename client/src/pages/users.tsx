@@ -68,10 +68,14 @@ export default function Users() {
 
   const createUserMutation = useMutation({
     mutationFn: async (data: typeof userForm) => {
+      console.log("Creating user with data:", data);
       const res = await apiRequest("POST", "/api/users", data);
-      return await res.json();
+      const result = await res.json();
+      console.log("User creation result:", result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("User creation success, invalidating cache and closing dialog");
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setIsCreateDialogOpen(false);
       resetForm();
@@ -81,6 +85,7 @@ export default function Users() {
       });
     },
     onError: (error: Error) => {
+      console.error("User creation error:", error);
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -183,6 +188,7 @@ export default function Users() {
   };
 
   const handleCreateUser = () => {
+    console.log("Handle create user called with form:", userForm);
     if (!userForm.email || !userForm.password || !userForm.firstName || !userForm.lastName) {
       toast({
         title: "Error",
@@ -191,6 +197,7 @@ export default function Users() {
       });
       return;
     }
+    console.log("Form validation passed, calling mutation");
     createUserMutation.mutate(userForm);
   };
 
