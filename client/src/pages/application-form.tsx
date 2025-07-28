@@ -55,8 +55,8 @@ export default function ApplicationForm() {
       });
 
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Application submission failed');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Application submission failed');
       }
 
       return response.json();
