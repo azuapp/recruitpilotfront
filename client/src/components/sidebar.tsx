@@ -52,6 +52,11 @@ const getNavigationItems = (t: (key: any) => string) => [
     icon: Brain,
   },
   {
+    name: t("evaluations"),
+    href: "/evaluations",
+    icon: BarChart3,
+  },
+  {
     name: t("jobDescriptions"),
     href: "/job-descriptions",
     icon: Briefcase,

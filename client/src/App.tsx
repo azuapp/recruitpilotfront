@@ -14,6 +14,7 @@ import Candidates from "@/pages/candidates";
 import Interviews from "@/pages/interviews";
 import Emails from "@/pages/emails";
 import Assessments from "@/pages/assessments";
+import Evaluations from "@/pages/evaluations";
 import JobDescriptions from "@/pages/job-descriptions";
 import Users from "@/pages/users";
 
@@ -36,6 +37,7 @@ function Router() {
           <Route path="/interviews" component={Interviews} />
           <Route path="/emails" component={Emails} />
           <Route path="/assessments" component={Assessments} />
+          <Route path="/evaluations" component={Evaluations} />
           <Route path="/job-descriptions" component={JobDescriptions} />
           <Route path="/users" component={Users} />
         </>

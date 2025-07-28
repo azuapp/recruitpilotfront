@@ -556,6 +556,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Evaluation routes
+  app.post('/api/evaluations/run', isAuthenticated, async (req, res) => {
+    try {
+      const { runEvaluation } = await import('./controllers/evaluationController');
+      await runEvaluation(req, res);
+    } catch (error) {
+      console.error("Error running evaluation:", error);
+      res.status(500).json({ message: "Failed to run evaluation" });
+    }
+  });
+
+  app.get('/api/evaluations', isAuthenticated, async (req, res) => {
+    try {
+      const { getEvaluations } = await import('./controllers/evaluationController');
+      await getEvaluations(req, res);
+    } catch (error) {
+      console.error("Error fetching evaluations:", error);
+      res.status(500).json({ message: "Failed to fetch evaluations" });
+    }
+  });
+
   // Job Descriptions routes
   app.get('/api/job-descriptions', isAuthenticated, async (req, res) => {
     try {

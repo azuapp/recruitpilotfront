@@ -18,6 +18,7 @@ const translations = {
     interviews: "Interviews",
     emailHistory: "Email History",
     assessments: "Assessments",
+    evaluations: "Evaluations",
     users: "Users",
     
     // Users page
