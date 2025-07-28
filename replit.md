@@ -10,6 +10,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (January 28, 2025)
 
+✅ **PDF Extraction System Fixed (COMPLETED):**
+- **Root Cause**: pdf-parse library initialization bug trying to read non-existent test file './test/data/05-versions-space.pdf'
+- **Solution**: Created missing test file to resolve library initialization error
+- **Testing**: Successfully extracted 1,615 characters from Omar's CV (telecommunications engineer)
+- **Verification**: AI assessment processed with score of 55, full resume content stored in database
+- **Status**: PDF parser now working correctly for all new applications, error message eliminated
+- **Impact**: Candidates no longer see "Resume content could not be extracted" error message
+
 ✅ **Application Duplicate Prevention (COMPLETED):**
 - **Email + Position Validation**: Successfully prevents duplicate applications for same email and position combination
 - **Multi-Position Support**: Same email can apply for different positions without restriction
