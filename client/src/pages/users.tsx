@@ -181,10 +181,10 @@ export default function Users() {
   };
 
   const handleCreateUser = () => {
-    if (!userForm.email || !userForm.password) {
+    if (!userForm.email || !userForm.password || !userForm.firstName || !userForm.lastName) {
       toast({
         title: "Error",
-        description: "Email and password are required",
+        description: "All fields are required",
         variant: "destructive",
       });
       return;
@@ -215,7 +215,7 @@ export default function Users() {
     }
     
     // Remove password from update if empty
-    const updateData = { ...userForm, id: editingUser.id };
+    const updateData: any = { ...userForm, id: editingUser.id };
     if (!updateData.password) {
       delete updateData.password;
     }
@@ -300,7 +300,7 @@ export default function Users() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm">First Name</Label>
+                      <Label className="text-sm">First Name *</Label>
                       <Input
                         placeholder="John"
                         value={userForm.firstName}
@@ -309,7 +309,7 @@ export default function Users() {
                       />
                     </div>
                     <div>
-                      <Label className="text-sm">Last Name</Label>
+                      <Label className="text-sm">Last Name *</Label>
                       <Input
                         placeholder="Doe"
                         value={userForm.lastName}
