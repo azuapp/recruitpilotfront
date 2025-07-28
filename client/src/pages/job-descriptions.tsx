@@ -260,8 +260,8 @@ export default function JobDescriptions() {
     // Convert salary fields to numbers if they're not empty
     const submitData = {
       ...formData,
-      salaryMin: formData.salaryMin ? Number(formData.salaryMin) : undefined,
-      salaryMax: formData.salaryMax ? Number(formData.salaryMax) : undefined,
+      salaryMin: formData.salaryMin ? Number(formData.salaryMin) : '',
+      salaryMax: formData.salaryMax ? Number(formData.salaryMax) : '',
     };
 
     if (editingJobDescription) {

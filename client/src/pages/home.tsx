@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +29,7 @@ export default function Home() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
   const { t, isRTL } = useLanguage();
+  const [, setLocation] = useLocation();
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -69,7 +71,10 @@ export default function Home() {
               <p className="text-gray-600 mt-1 text-sm sm:text-base">{t("overviewDescription")}</p>
             </div>
             <div className="flex space-x-3">
-              <Button className="bg-primary text-white hover:bg-blue-700 w-full sm:w-auto">
+              <Button 
+                onClick={() => setLocation("/job-descriptions")}
+                className="bg-primary text-white hover:bg-blue-700 w-full sm:w-auto"
+              >
                 <Users className="w-4 h-4 mr-2" />
                 {t("newPosition")}
               </Button>
