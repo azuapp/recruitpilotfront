@@ -70,9 +70,21 @@ export default function Users() {
     mutationFn: async (data: typeof userForm) => {
       console.log("Creating user with data:", data);
       const res = await apiRequest("POST", "/api/users", data);
-      const result = await res.json();
-      console.log("User creation result:", result);
-      return result;
+      console.log("Response status:", res.status);
+      console.log("Response headers:", res.headers);
+      
+      const text = await res.text();
+      console.log("Raw response text:", text);
+      
+      try {
+        const result = JSON.parse(text);
+        console.log("Parsed user creation result:", result);
+        return result;
+      } catch (e) {
+        console.error("JSON parse error:", e);
+        console.error("Failed to parse response:", text);
+        throw new Error(`Invalid JSON response: ${text}`);
+      }
     },
     onSuccess: (data) => {
       console.log("User creation success, invalidating cache and closing dialog");
