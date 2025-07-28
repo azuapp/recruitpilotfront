@@ -159,12 +159,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Check for duplicate application (same email + same position)
+      console.log(`Checking for duplicate: email=${candidateData.email}, position=${candidateData.position}`);
       const existingCandidate = await storage.getCandidateByEmailAndPosition(
         candidateData.email,
         candidateData.position
       );
+      console.log(`Existing candidate found:`, existingCandidate ? 'YES' : 'NO');
 
       if (existingCandidate) {
+        console.log(`Blocking duplicate application for ${candidateData.email} - ${candidateData.position}`);
         return res.status(400).json({ 
           message: 'You have already applied for this position. Please check your email for application status or contact us for updates.'
         });
