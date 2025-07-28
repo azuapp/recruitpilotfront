@@ -65,6 +65,7 @@ export interface IStorage {
     date?: Date;
   }): Promise<Interview[]>;
   updateInterview(id: string, updates: Partial<Interview>): Promise<Interview>;
+  deleteInterview(id: string): Promise<void>;
   
   // Email operations
   createEmail(email: InsertEmail): Promise<EmailHistory>;
@@ -394,6 +395,10 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEmail(id: string): Promise<void> {
     await db.delete(emailHistory).where(eq(emailHistory.id, id));
+  }
+
+  async deleteInterview(id: string): Promise<void> {
+    await db.delete(interviews).where(eq(interviews.id, id));
   }
 
   // Job Description operations

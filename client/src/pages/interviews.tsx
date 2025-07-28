@@ -21,7 +21,9 @@ import {
   Edit, 
   Mail,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Trash2,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -58,6 +60,9 @@ export default function Interviews() {
   // Edit interview state
   const [editingInterview, setEditingInterview] = useState<Interview | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  
+  // Delete interview state
+  const [deletingInterviewId, setDeletingInterviewId] = useState<string | null>(null);
 
   const scheduleInterviewMutation = useMutation({
     mutationFn: async (data: typeof interviewForm) => {
@@ -88,6 +93,58 @@ export default function Interviews() {
       });
     },
   });
+
+  // Delete interview mutation
+  const deleteInterviewMutation = useMutation({
+    mutationFn: async (interviewId: string) => {
+      const response = await apiRequest("DELETE", `/api/interviews/${interviewId}`);
+      return response.json();
+    },
+    onMutate: async (interviewId: string) => {
+      setDeletingInterviewId(interviewId);
+    },
+    onSuccess: (data, interviewId) => {
+      setDeletingInterviewId(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/interviews"] });
+      toast({
+        title: isRTL ? "تم حذف المقابلة" : "Interview Deleted",
+        description: isRTL ? "تم حذف المقابلة بنجاح" : "Interview deleted successfully",
+      });
+    },
+    onError: (error: any, interviewId) => {
+      setDeletingInterviewId(null);
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: isRTL ? "خطأ في الحذف" : "Delete Error",
+        description: error.message || (isRTL ? "فشل في حذف المقابلة" : "Failed to delete interview"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteInterview = (interviewId: string, candidateName: string) => {
+    if (deletingInterviewId) {
+      return;
+    }
+    
+    const confirmMessage = isRTL 
+      ? `${t("confirmDeleteInterview")} (${candidateName})`
+      : `${t("confirmDeleteInterview")} (${candidateName})`;
+    
+    if (window.confirm(confirmMessage)) {
+      deleteInterviewMutation.mutate(interviewId);
+    }
+  };
 
   const handleScheduleInterview = () => {
     if (!selectedCandidate || !interviewForm.scheduledDate) {
@@ -903,6 +960,20 @@ export default function Interviews() {
                                 title="Send Email"
                               >
                                 <Mail className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleDeleteInterview(interview.id, candidate?.fullName || 'Unknown Candidate')}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                                disabled={deletingInterviewId === interview.id}
+                                title={t("deleteInterview")}
+                              >
+                                {deletingInterviewId === interview.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4" />
+                                )}
                               </Button>
                             </div>
                           </td>

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { storage } from '../storage';
 import { asyncHandler } from '../services/errorHandler';
 import { ValidationService, interviewValidationSchema } from '../services/validationService';
@@ -8,7 +8,7 @@ import { logger } from '../services/logger';
 const router = Router();
 
 // Get all interviews
-router.get('/interviews', requireAuth, asyncHandler(async (req, res) => {
+router.get('/interviews', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { candidateId, status } = req.query;
   
   const filters: any = {};
@@ -20,7 +20,7 @@ router.get('/interviews', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 // Create new interview
-router.post('/interviews', requireAuth, asyncHandler(async (req, res) => {
+router.post('/interviews', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const validatedData = ValidationService.validate(interviewValidationSchema, req.body);
   
   logger.info('Creating new interview', { candidateId: validatedData.candidateId });
@@ -32,7 +32,7 @@ router.post('/interviews', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 // Update interview
-router.put('/interviews/:id', requireAuth, asyncHandler(async (req, res) => {
+router.put('/interviews/:id', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   
   // Validate partial data for updates
@@ -57,7 +57,7 @@ router.put('/interviews/:id', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 // Get interview by ID
-router.get('/interviews/:id', requireAuth, asyncHandler(async (req, res) => {
+router.get('/interviews/:id', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   
   const interviews = await storage.getInterviews();
@@ -68,6 +68,18 @@ router.get('/interviews/:id', requireAuth, asyncHandler(async (req, res) => {
   }
   
   res.json(interview);
+}));
+
+// Delete interview
+router.delete('/interviews/:id', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  
+  logger.info('Deleting interview', { interviewId: id, user: req.user?.email });
+  
+  await storage.deleteInterview(id);
+  
+  logger.info('Interview deleted successfully', { interviewId: id });
+  res.json({ message: 'Interview deleted successfully' });
 }));
 
 export default router;
