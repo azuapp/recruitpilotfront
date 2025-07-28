@@ -24,6 +24,31 @@ export const createCandidate = asyncHandler(async (req: Request, res: Response) 
     cvFilePath: req.file?.path,
   });
 
+  // Check for duplicate application (same email + same position)
+  logger.info('Checking for duplicate application', { 
+    email: candidateData.email, 
+    position: candidateData.position 
+  });
+  
+  const existingCandidate = await storage.getCandidateByEmailAndPosition(
+    candidateData.email,
+    candidateData.position
+  );
+
+  if (existingCandidate) {
+    logger.warn('Duplicate application blocked', { 
+      email: candidateData.email, 
+      position: candidateData.position,
+      existingCandidateId: existingCandidate.id 
+    });
+    throw new AppError('You have already applied for this position. Please check your email for application status or contact us for updates.', 400);
+  }
+
+  logger.info('Duplicate validation passed, proceeding with application', { 
+    email: candidateData.email, 
+    position: candidateData.position 
+  });
+
   // Extract text from PDF if file was uploaded
   let resumeSummary = null;
   if (req.file?.path) {

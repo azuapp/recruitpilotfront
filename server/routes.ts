@@ -147,7 +147,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Public application form endpoint
   app.post('/api/applications', upload.single('cv'), async (req, res) => {
+    console.log('📝 APPLICATION ENDPOINT HIT - Starting validation process');
     try {
+      console.log('📋 Parsing candidate data...');
       const candidateData = insertCandidateSchema.parse({
         fullName: req.body.fullName,
         email: req.body.email,
@@ -157,21 +159,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cvFileName: req.file?.originalname,
         cvFilePath: req.file?.path,
       });
+      console.log(`📋 Parsed data: ${candidateData.email} applying for ${candidateData.position}`);
 
       // Check for duplicate application (same email + same position)
-      console.log(`Checking for duplicate: email=${candidateData.email}, position=${candidateData.position}`);
+      console.log(`🔍 VALIDATION: Checking duplicate for email="${candidateData.email}", position="${candidateData.position}"`);
       const existingCandidate = await storage.getCandidateByEmailAndPosition(
         candidateData.email,
         candidateData.position
       );
-      console.log(`Existing candidate found:`, existingCandidate ? 'YES' : 'NO');
+      console.log(`🔍 VALIDATION RESULT: Existing candidate found:`, existingCandidate ? 'YES - BLOCKING' : 'NO - ALLOWING');
 
       if (existingCandidate) {
-        console.log(`Blocking duplicate application for ${candidateData.email} - ${candidateData.position}`);
+        console.log(`🚫 DUPLICATE BLOCKED: ${candidateData.email} - ${candidateData.position}`);
         return res.status(400).json({ 
           message: 'You have already applied for this position. Please check your email for application status or contact us for updates.'
         });
       }
+
+      console.log(`✅ VALIDATION PASSED: Creating new application for ${candidateData.email} - ${candidateData.position}`);
 
       // Extract text from PDF if file was uploaded
       let resumeSummary = null;
