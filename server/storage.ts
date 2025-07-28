@@ -70,6 +70,7 @@ export interface IStorage {
   createEmail(email: InsertEmail): Promise<EmailHistory>;
   getEmails(candidateId?: string): Promise<EmailHistory[]>;
   updateEmailStatus(id: string, status: string): Promise<EmailHistory>;
+  deleteEmail(id: string): Promise<void>;
   
   // Job Description operations
   createJobDescription(jobDescription: InsertJobDescription): Promise<JobDescription>;
@@ -389,6 +390,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(emailHistory.id, id))
       .returning();
     return updatedEmail;
+  }
+
+  async deleteEmail(id: string): Promise<void> {
+    await db.delete(emailHistory).where(eq(emailHistory.id, id));
   }
 
   // Job Description operations

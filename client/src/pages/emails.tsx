@@ -15,7 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send } from "lucide-react";
+import { Send, Trash2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface EmailHistory {
@@ -44,6 +44,7 @@ export default function Emails() {
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
   const [showCandidateDropdown, setShowCandidateDropdown] = useState(false);
   const [expandedEmails, setExpandedEmails] = useState<Set<string>>(new Set());
+  const [deletingEmailId, setDeletingEmailId] = useState<string | null>(null);
 
   // Send email mutation 
   const sendEmailMutation = useMutation({
@@ -76,6 +77,58 @@ export default function Emails() {
       });
     },
   });
+
+  // Delete email mutation
+  const deleteEmailMutation = useMutation({
+    mutationFn: async (emailId: string) => {
+      const response = await apiRequest("DELETE", `/api/emails/${emailId}`);
+      return response.json();
+    },
+    onMutate: async (emailId: string) => {
+      setDeletingEmailId(emailId);
+    },
+    onSuccess: (data, emailId) => {
+      setDeletingEmailId(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
+      toast({
+        title: isRTL ? "تم حذف الإيميل" : "Email Deleted",
+        description: isRTL ? "تم حذف الإيميل بنجاح" : "Email deleted successfully",
+      });
+    },
+    onError: (error: any, emailId) => {
+      setDeletingEmailId(null);
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: isRTL ? "خطأ في الحذف" : "Delete Error",
+        description: error.message || (isRTL ? "فشل في حذف الإيميل" : "Failed to delete email"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteEmail = (emailId: string, subject: string) => {
+    if (deletingEmailId) {
+      return;
+    }
+    
+    const confirmMessage = isRTL 
+      ? `${t("confirmDeleteEmail")} (${subject})`
+      : `${t("confirmDeleteEmail")} (${subject})`;
+    
+    if (window.confirm(confirmMessage)) {
+      deleteEmailMutation.mutate(emailId);
+    }
+  };
 
   const handleSendEmail = () => {
     if (!selectedCandidate || !emailForm.subject || !emailForm.content) {
@@ -378,6 +431,20 @@ export default function Emails() {
                             >
                               {isExpanded ? "Show Less" : "Show More"}
                             </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleDeleteEmail(emailId, email.subject)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                              disabled={deletingEmailId === emailId}
+                              title={t("deleteEmail")}
+                            >
+                              {deletingEmailId === emailId ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -458,6 +525,20 @@ export default function Emails() {
                                   Reply
                                 </Button>
                               )}
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleDeleteEmail(emailId, email.subject)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                                disabled={deletingEmailId === emailId}
+                                title={t("deleteEmail")}
+                              >
+                                {deletingEmailId === emailId ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4" />
+                                )}
+                              </Button>
                             </div>
                           </div>
                         </div>

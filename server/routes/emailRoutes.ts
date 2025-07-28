@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { storage } from '../storage';
 import { asyncHandler } from '../services/errorHandler';
 import { ValidationService, emailValidationSchema } from '../services/validationService';
@@ -9,7 +9,7 @@ import { logger } from '../services/logger';
 const router = Router();
 
 // Get all emails
-router.get('/emails', requireAuth, asyncHandler(async (req, res) => {
+router.get('/emails', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { candidateId } = req.query;
   
   const emails = await storage.getEmails(candidateId as string);
@@ -17,7 +17,7 @@ router.get('/emails', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 // Send email
-router.post('/emails/send', requireAuth, asyncHandler(async (req, res) => {
+router.post('/emails/send', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const validatedData = ValidationService.validate(emailValidationSchema, req.body);
   
   logger.info('Sending email', { 
@@ -75,7 +75,7 @@ router.post('/emails/send', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 // Update email status
-router.put('/emails/:id/status', requireAuth, asyncHandler(async (req, res) => {
+router.put('/emails/:id/status', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { status } = req.body;
   
@@ -89,6 +89,18 @@ router.put('/emails/:id/status', requireAuth, asyncHandler(async (req, res) => {
   
   logger.info('Email status updated', { emailId: id, status });
   res.json(updatedEmail);
+}));
+
+// Delete email
+router.delete('/emails/:id', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  
+  logger.info('Deleting email', { emailId: id, user: req.user?.email });
+  
+  await storage.deleteEmail(id);
+  
+  logger.info('Email deleted successfully', { emailId: id });
+  res.json({ message: 'Email deleted successfully' });
 }));
 
 export default router;

@@ -200,6 +200,8 @@ const translations = {
     confirmDelete: "Are you sure you want to delete this evaluation?",
     deleteCandidate: "Delete Candidate",
     confirmDeleteCandidate: "Are you sure you want to delete this candidate? This action cannot be undone.",
+    deleteEmail: "Delete Email",
+    confirmDeleteEmail: "Are you sure you want to delete this email? This action cannot be undone.",
   },
   ar: {
     // Navigation
@@ -391,6 +393,8 @@ const translations = {
     confirmDelete: "هل أنت متأكد من حذف هذا التقييم؟",
     deleteCandidate: "حذف المرشح",
     confirmDeleteCandidate: "هل أنت متأكد من حذف هذا المرشح؟ هذا الإجراء لا يمكن التراجع عنه.",
+    deleteEmail: "حذف الإيميل",
+    confirmDeleteEmail: "هل أنت متأكد من حذف هذا الإيميل؟ هذا الإجراء لا يمكن التراجع عنه.",
   }
 };
 
