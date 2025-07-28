@@ -58,6 +58,9 @@ interface EvaluationResult {
 
 export default function Evaluations() {
   const { isAuthenticated, isLoading } = useAuth();
+  
+  // Add debugging for auth state
+  console.log("Auth state:", { isAuthenticated, isLoading });
   const { t, language, isRTL } = useLanguage();
   const { toast } = useToast();
   const [selectedPosition, setSelectedPosition] = useState<string>("all");
@@ -92,12 +95,26 @@ export default function Evaluations() {
     mutationFn: async (position: string) => {
       try {
         console.log("Starting evaluation for position:", position);
-        const response = await apiRequest("POST", "/api/evaluations/run", { position });
+        const response = await fetch("/api/evaluations/run", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ position }),
+        });
         
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error("API error response:", errorText);
-          throw new Error(`API Error: ${response.status} - ${errorText}`);
+          if (response.status === 401) {
+            throw new Error("Please log in again to continue");
+          }
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Error ${response.status}`);
+          } else {
+            throw new Error(`Authentication error - please refresh and log in again`);
+          }
         }
         
         const result = await response.json();
@@ -110,21 +127,29 @@ export default function Evaluations() {
     },
     onSuccess: (data) => {
       console.log("Evaluation success:", data);
-      toast({
-        title: "Success", 
-        description: `Evaluated ${data.count || data.results?.length || 0} candidates successfully`,
-      });
-      // Force refetch after a short delay
-      setTimeout(() => {
-        refetchEvaluations();
-      }, 500);
+      if (data && (data.count || data.results)) {
+        toast({
+          title: "Success", 
+          description: `Evaluated ${data.count || data.results?.length || 0} candidates successfully`,
+        });
+        // Force refetch after a short delay
+        setTimeout(() => {
+          refetchEvaluations();
+        }, 500);
+      } else {
+        toast({
+          title: "Info",
+          description: "Evaluation completed but no results found",
+        });
+      }
       setIsEvaluating(false);
     },
     onError: (error: Error) => {
       console.error("Evaluation error:", error);
+      const errorMessage = error?.message || error?.toString() || "Failed to run evaluation";
       toast({
         title: "Error",
-        description: error.message || "Failed to run evaluation",
+        description: errorMessage,
         variant: "destructive",
       });
       setIsEvaluating(false);
