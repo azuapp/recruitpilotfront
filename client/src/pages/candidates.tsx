@@ -27,7 +27,9 @@ import {
   Globe,
   FileText,
   Calendar,
-  Edit3
+  Edit3,
+  Trash2,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -264,6 +266,49 @@ export default function Candidates() {
     }
   };
 
+  // Delete candidate mutation
+  const deleteCandidateMutation = useMutation({
+    mutationFn: async (candidateId: string) => {
+      const response = await apiRequest("DELETE", `/api/candidates/${candidateId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+      toast({
+        title: isRTL ? "تم حذف المرشح" : "Candidate Deleted",
+        description: isRTL ? "تم حذف المرشح بنجاح" : "Candidate deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: isRTL ? "خطأ في الحذف" : "Delete Error",
+        description: error.message || (isRTL ? "فشل في حذف المرشح" : "Failed to delete candidate"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteCandidate = (candidate: CandidateWithAssessment) => {
+    const confirmMessage = isRTL 
+      ? `هل أنت متأكد من حذف المرشح ${candidate.fullName}؟ هذا الإجراء لا يمكن التراجع عنه.`
+      : `Are you sure you want to delete ${candidate.fullName}? This action cannot be undone.`;
+    
+    if (window.confirm(confirmMessage)) {
+      deleteCandidateMutation.mutate(candidate.id);
+    }
+  };
+
   if (isLoading || !isAuthenticated) {
     return <div>Loading...</div>;
   }
@@ -390,8 +435,8 @@ export default function Candidates() {
                         </td>
                       </tr>
                     ) : (
-                      candidates?.map((candidate) => (
-                        <tr key={candidate.id} className="hover:bg-gray-50">
+                      candidates?.map((candidate, index) => (
+                        <tr key={`candidate-${candidate.id}-${index}`} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center space-x-3">
                               <Avatar>
@@ -546,6 +591,20 @@ export default function Candidates() {
                                   </div>
                                 </DialogContent>
                               </Dialog>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleDeleteCandidate(candidate)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                                disabled={deleteCandidateMutation.isPending}
+                                title={isRTL ? "حذف المرشح" : "Delete Candidate"}
+                              >
+                                {deleteCandidateMutation.isPending ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4" />
+                                )}
+                              </Button>
                             </div>
                           </td>
                         </tr>

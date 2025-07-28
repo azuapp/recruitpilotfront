@@ -4,7 +4,8 @@ import {
   getCandidates,
   getCandidateById,
   updateCandidateStatus,
-  downloadCV
+  downloadCV,
+  deleteCandidate
 } from '../controllers/candidateController';
 import { upload } from '../services/fileUpload';
 import { handleError } from '../services/errorHandler';
@@ -25,6 +26,9 @@ router.patch('/candidates/:id/status', updateCandidateStatus);
 
 // Download CV file
 router.get('/candidates/:id/cv', downloadCV);
+
+// Delete candidate
+router.delete('/candidates/:id', deleteCandidate);
 
 // Error handling middleware
 router.use((error: Error, req: any, res: any, next: any) => {

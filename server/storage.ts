@@ -49,6 +49,7 @@ export interface IStorage {
   getCandidateById(id: string): Promise<CandidateWithRelations | undefined>;
   getCandidateByEmailAndPosition(email: string, position: string): Promise<Candidate | undefined>;
   updateCandidateStatus(id: string, status: string): Promise<Candidate>;
+  deleteCandidate(id: string): Promise<void>;
   
   // Assessment operations
   createAssessment(assessment: InsertAssessment): Promise<Assessment>;
@@ -270,6 +271,24 @@ export class DatabaseStorage implements IStorage {
       .where(eq(candidates.id, id))
       .returning();
     return updatedCandidate;
+  }
+
+  async deleteCandidate(id: string): Promise<void> {
+    // Delete in correct order to handle foreign key constraints
+    // 1. Delete job fit scores
+    await db.delete(jobFitScores).where(eq(jobFitScores.candidateId, id));
+    
+    // 2. Delete email history
+    await db.delete(emailHistory).where(eq(emailHistory.candidateId, id));
+    
+    // 3. Delete interviews
+    await db.delete(interviews).where(eq(interviews.candidateId, id));
+    
+    // 4. Delete assessments
+    await db.delete(assessments).where(eq(assessments.candidateId, id));
+    
+    // 5. Delete candidate
+    await db.delete(candidates).where(eq(candidates.id, id));
   }
 
   // Assessment operations

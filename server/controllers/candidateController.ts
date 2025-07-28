@@ -212,3 +212,25 @@ async function startAssessment(candidateId: string, position: string, resumeSumm
     throw error;
   }
 }
+
+export const deleteCandidate = asyncHandler(async (req: Request, res: Response) => {
+  const candidateId = req.params.id;
+  
+  logger.info('Deleting candidate', { candidateId, user: (req as any).user?.email });
+
+  // Check if candidate exists
+  const candidate = await storage.getCandidateById(candidateId);
+  if (!candidate) {
+    throw new AppError('Candidate not found', 404);
+  }
+
+  // Delete candidate and all related data
+  await storage.deleteCandidate(candidateId);
+
+  logger.info('Candidate deleted successfully', { candidateId, candidateName: candidate.fullName });
+
+  res.json({ 
+    message: 'Candidate deleted successfully',
+    candidateId 
+  });
+});
