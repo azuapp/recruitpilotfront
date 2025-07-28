@@ -474,7 +474,7 @@ export default function JobDescriptions() {
                           )}
                           <div className="flex items-center space-x-2">
                             <Briefcase className="w-3 h-3 text-gray-500" />
-                            <span className="text-gray-600 capitalize">{job.employmentType.replace('-', ' ')}</span>
+                            <span className="text-gray-600 capitalize">{job.employmentType?.replace('-', ' ') || 'N/A'}</span>
                           </div>
                           {job.salaryRange && (
                             <div className="flex items-center space-x-2">
