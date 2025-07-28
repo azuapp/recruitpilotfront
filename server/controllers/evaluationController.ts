@@ -175,6 +175,11 @@ export const runEvaluation = async (req: Request, res: Response) => {
     
     logger.info("Starting candidate evaluation", { position });
 
+    if (!process.env.OPENAI_API_KEY) {
+      logger.error("OpenAI API key not configured");
+      return res.status(500).json({ message: "OpenAI API key not configured" });
+    }
+
     // Get candidates for the specific position or all if "all" is selected
     const candidates = await storage.getCandidates();
     const filteredCandidates = position === "all" 

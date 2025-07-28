@@ -155,10 +155,10 @@ export default function Evaluations() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Candidate Evaluations
+              {t("candidateEvaluations")}
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              AI-powered candidate evaluation and ranking based on job fit analysis
+              {t("aiPoweredEvaluationDescription")}
             </p>
           </div>
 
@@ -167,10 +167,10 @@ export default function Evaluations() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Evaluation Controls
+                {t("evaluationControls")}
               </CardTitle>
               <CardDescription>
-                Select a position and run AI evaluation to rank candidates by job fit
+                {t("selectPositionEvaluate")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -178,10 +178,10 @@ export default function Evaluations() {
                 <div className="flex-1 max-w-xs">
                   <Select value={selectedPosition} onValueChange={setSelectedPosition}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select position" />
+                      <SelectValue placeholder={t("selectPosition")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Positions</SelectItem>
+                      <SelectItem value="all">{t("allPositions")}</SelectItem>
                       {positions.map((position) => (
                         <SelectItem key={position} value={position}>
                           {position.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
@@ -200,7 +200,7 @@ export default function Evaluations() {
                   ) : (
                     <Award className="h-4 w-4" />
                   )}
-                  {isEvaluating ? "Evaluating..." : "Run Evaluation"}
+                  {isEvaluating ? t("evaluating") : t("runEvaluation")}
                 </Button>
               </div>
             </CardContent>
@@ -216,7 +216,7 @@ export default function Evaluations() {
                       <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Total Evaluated</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{t("totalEvaluated")}</p>
                       <p className="text-2xl font-bold">{evaluations.length}</p>
                     </div>
                   </div>
@@ -230,7 +230,7 @@ export default function Evaluations() {
                       <Award className="h-6 w-6 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Top Candidates</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{t("topCandidates")}</p>
                       <p className="text-2xl font-bold">
                         {evaluations.filter(e => e.fitScore >= 80).length}
                       </p>
@@ -246,7 +246,7 @@ export default function Evaluations() {
                       <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Avg Fit Score</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{t("avgFitScore")}</p>
                       <p className="text-2xl font-bold">
                         {Math.round(evaluations.reduce((acc, e) => acc + e.fitScore, 0) / evaluations.length)}%
                       </p>
@@ -261,7 +261,7 @@ export default function Evaluations() {
           {mergedEvaluations.length > 0 ? (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                Evaluation Results
+                {t("evaluationResults")}
               </h2>
               
               {mergedEvaluations.map((evaluation, index) => (
@@ -292,7 +292,7 @@ export default function Evaluations() {
                       <div className="text-right">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                            Fit Score
+                            {t("fitScore")}
                           </span>
                           <Badge variant={getScoreBadgeVariant(evaluation.fitScore)}>
                             {evaluation.fitScore}%
@@ -305,7 +305,7 @@ export default function Evaluations() {
                     <div className="grid md:grid-cols-3 gap-4 mb-4">
                       <div>
                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                          Experience Match
+                          {t("experienceMatch")}
                         </p>
                         <div className="flex items-center gap-2">
                           <Progress value={evaluation.experienceMatch} className="flex-1" />
@@ -317,7 +317,7 @@ export default function Evaluations() {
                       
                       <div>
                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                          Education Match
+                          {t("educationMatch")}
                         </p>
                         <div className="flex items-center gap-2">
                           <Progress value={evaluation.educationMatch} className="flex-1" />
@@ -329,7 +329,7 @@ export default function Evaluations() {
                       
                       <div>
                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                          Skills Match
+                          {t("skillsMatch")}
                         </p>
                         <div className="flex items-center gap-2">
                           <Progress value={(evaluation.matchingSkills.length / (evaluation.matchingSkills.length + evaluation.missingSkills.length)) * 100} className="flex-1" />
@@ -343,7 +343,7 @@ export default function Evaluations() {
                     <div className="grid md:grid-cols-2 gap-4 mb-4">
                       <div>
                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                          Matching Skills
+                          {t("matchingSkills")}
                         </p>
                         <div className="flex flex-wrap gap-1">
                           {evaluation.matchingSkills.slice(0, 5).map((skill, idx) => (
@@ -361,7 +361,7 @@ export default function Evaluations() {
                       
                       <div>
                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                          Missing Skills
+                          {t("missingSkills")}
                         </p>
                         <div className="flex flex-wrap gap-1">
                           {evaluation.missingSkills.slice(0, 5).map((skill, idx) => (
@@ -380,7 +380,7 @@ export default function Evaluations() {
 
                     <div className="border-t pt-4">
                       <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        AI Recommendation
+                        {t("aiRecommendation")}
                       </p>
                       <p className="text-sm text-gray-700 dark:text-gray-300">
                         {evaluation.overallRecommendation}
@@ -395,21 +395,21 @@ export default function Evaluations() {
               <CardContent className="p-8 text-center">
                 <Award className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  No Evaluations Available
+                  {t("noEvaluationsAvailable")}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Run an evaluation to see candidate rankings and job fit analysis
+                  {t("runEvaluationMessage")}
                 </p>
                 <Button onClick={handleRunEvaluation} disabled={isEvaluating}>
                   {isEvaluating ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Evaluating...
+                      {t("evaluating")}
                     </>
                   ) : (
                     <>
                       <Award className="h-4 w-4 mr-2" />
-                      Start Evaluation
+                      {t("startEvaluation")}
                     </>
                   )}
                 </Button>
