@@ -556,7 +556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Evaluation routes 
+  // Evaluation routes
   app.post('/api/evaluations/run', isAuthenticated, async (req, res) => {
     try {
       console.log("POST /api/evaluations/run - body:", req.body);

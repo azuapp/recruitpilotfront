@@ -122,6 +122,10 @@ export default function Evaluations() {
         return result;
       } catch (error) {
         console.error("Mutation function error:", error);
+        // Handle empty error objects
+        if (!error || (typeof error === 'object' && Object.keys(error).length === 0)) {
+          throw new Error("Unknown error occurred during evaluation");
+        }
         throw error;
       }
     },
@@ -144,9 +148,20 @@ export default function Evaluations() {
       }
       setIsEvaluating(false);
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       console.error("Evaluation error:", error);
-      const errorMessage = error?.message || error?.toString() || "Failed to run evaluation";
+      let errorMessage = "Failed to run evaluation";
+      
+      if (error && typeof error === 'object') {
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (error.toString && error.toString() !== '[object Object]') {
+          errorMessage = error.toString();
+        }
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
       toast({
         title: "Error",
         description: errorMessage,
