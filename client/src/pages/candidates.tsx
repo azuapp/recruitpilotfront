@@ -270,11 +270,15 @@ export default function Candidates() {
   // Delete candidate mutation
   const deleteCandidateMutation = useMutation({
     mutationFn: async (candidateId: string) => {
-      setDeletingCandidateId(candidateId);
       const response = await apiRequest("DELETE", `/api/candidates/${candidateId}`);
       return response.json();
     },
-    onSuccess: () => {
+    onMutate: async (candidateId: string) => {
+      // Set loading state for this specific candidate
+      setDeletingCandidateId(candidateId);
+    },
+    onSuccess: (data, candidateId) => {
+      // Clear loading state
       setDeletingCandidateId(null);
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
       toast({
@@ -282,7 +286,8 @@ export default function Candidates() {
         description: isRTL ? "تم حذف المرشح بنجاح" : "Candidate deleted successfully",
       });
     },
-    onError: (error: any) => {
+    onError: (error: any, candidateId) => {
+      // Clear loading state on error
       setDeletingCandidateId(null);
       if (isUnauthorizedError(error)) {
         toast({
@@ -304,6 +309,11 @@ export default function Candidates() {
   });
 
   const handleDeleteCandidate = (candidate: CandidateWithAssessment) => {
+    // Prevent multiple delete operations
+    if (deletingCandidateId) {
+      return;
+    }
+    
     const confirmMessage = isRTL 
       ? `${t("confirmDeleteCandidate")} (${candidate.fullName})`
       : `${t("confirmDeleteCandidate")} (${candidate.fullName})`;
@@ -439,8 +449,8 @@ export default function Candidates() {
                         </td>
                       </tr>
                     ) : (
-                      candidates?.map((candidate, index) => (
-                        <tr key={`candidate-${candidate.id}-${index}`} className="hover:bg-gray-50">
+                      candidates?.map((candidate) => (
+                        <tr key={candidate.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center space-x-3">
                               <Avatar>
