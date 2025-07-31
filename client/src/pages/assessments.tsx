@@ -88,8 +88,8 @@ export default function Assessments() {
       setDeletingAssessmentId(null);
       queryClient.invalidateQueries({ queryKey: ["/api/assessments"] });
       toast({
-        title: "Assessment Deleted",
-        description: "Assessment deleted successfully",
+        title: t("assessmentDeleted"),
+        description: t("assessmentDeletedSuccessfully"),
       });
     },
     onError: (error: any) => {
@@ -121,7 +121,7 @@ export default function Assessments() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/assessments"] });
       toast({
-        title: "Bulk Assessment Completed",
+        title: t("bulkAssessmentCompleted"),
         description: data.message || `Processed ${data.processed || 0} candidates`,
       });
     },
@@ -138,8 +138,8 @@ export default function Assessments() {
         return;
       }
       toast({
-        title: "Assessment Failed",
-        description: error.message || "Failed to run bulk assessment",
+        title: t("assessmentFailed"),
+        description: error.message || t("failedToRunBulkAssessment"),
         variant: "destructive",
       });
     },
@@ -149,7 +149,7 @@ export default function Assessments() {
     if (!candidates?.length) {
       toast({
         title: "No Candidates",
-        description: "No candidates available for assessment",
+        description: t("noCandidatesAvailable"),
         variant: "destructive",
       });
       return;
@@ -158,7 +158,7 @@ export default function Assessments() {
   };
 
   const handleDeleteAssessment = (assessment: Assessment) => {
-    if (!confirm('Are you sure you want to delete this assessment?')) return;
+    if (!confirm(t("deleteAssessmentConfirm"))) return;
     deleteAssessmentMutation.mutate(assessment.id);
   };
 
@@ -233,7 +233,7 @@ export default function Assessments() {
                 {t("assessments")}
               </h1>
               <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-                AI-powered candidate assessments and insights
+                {t("aiPoweredCandidateAssessments")}
               </p>
             </div>
             <div className="flex gap-3">
@@ -245,12 +245,12 @@ export default function Assessments() {
                 {bulkAssessmentMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Processing...
+                    {t("processing")}
                   </>
                 ) : (
                   <>
                     <Brain className="w-4 h-4 mr-2" />
-                    Run Bulk Assessment
+                    {t("runBulkAssessment")}
                   </>
                 )}
               </Button>
@@ -267,7 +267,7 @@ export default function Assessments() {
                       <Brain className="w-4 h-4 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-xs sm:text-sm text-gray-500">Total Assessments</p>
+                      <p className="text-xs sm:text-sm text-gray-500">{t("totalAssessments")}</p>
                       <p className="text-lg sm:text-xl font-bold">{assessments.length}</p>
                     </div>
                   </div>
@@ -281,7 +281,7 @@ export default function Assessments() {
                       <TrendingUp className="w-4 h-4 text-green-600" />
                     </div>
                     <div>
-                      <p className="text-xs sm:text-sm text-gray-500">Avg Score</p>
+                      <p className="text-xs sm:text-sm text-gray-500">{t("averageScore")}</p>
                       <p className="text-lg sm:text-xl font-bold">
                         {(() => {
                           const validScores = assessments.filter(a => {
@@ -308,7 +308,7 @@ export default function Assessments() {
                       <Star className="w-4 h-4 text-yellow-600" />
                     </div>
                     <div>
-                      <p className="text-xs sm:text-sm text-gray-500">High Scores</p>
+                      <p className="text-xs sm:text-sm text-gray-500">{t("highScores")}</p>
                       <p className="text-lg sm:text-xl font-bold">
                         {assessments.filter(a => {
                           const score = parseFloat(a.overallScore);
@@ -327,7 +327,7 @@ export default function Assessments() {
                       <Settings className="w-4 h-4 text-purple-600" />
                     </div>
                     <div>
-                      <p className="text-xs sm:text-sm text-gray-500">Completed</p>
+                      <p className="text-xs sm:text-sm text-gray-500">{t("completed")}</p>
                       <p className="text-lg sm:text-xl font-bold">
                         {assessments.filter(a => a.status === 'completed').length}
                       </p>
@@ -342,15 +342,15 @@ export default function Assessments() {
           {assessmentsLoading ? (
             <div className="text-center py-8">
               <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-500" />
-              <div className="text-gray-500 mt-2">Loading assessments...</div>
+              <div className="text-gray-500 mt-2">{t("loadingAssessments")}</div>
             </div>
           ) : !assessments || assessments.length === 0 ? (
             <Card>
               <CardContent className="p-6 sm:p-8 text-center">
                 <Brain className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No assessments found</h3>
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">{t("noAssessmentsFound")}</h3>
                 <p className="text-sm sm:text-base text-gray-500 mb-4">
-                  Assessments will appear here once candidates are processed by our AI system.
+                  {t("assessmentsWillAppear")}
                 </p>
               </CardContent>
             </Card>
@@ -374,7 +374,7 @@ export default function Assessments() {
                             </Avatar>
                             <div className="flex-1 min-w-0">
                               <h3 className="text-sm sm:text-base font-medium text-gray-900 truncate">
-                                {candidate?.fullName || 'Unknown Candidate'}
+                                {candidate?.fullName || t("unknownCandidate")}
                               </h3>
                               <p className="text-xs sm:text-sm text-gray-500 truncate">
                                 {candidate?.position || 'N/A'}
@@ -389,7 +389,7 @@ export default function Assessments() {
                         {/* Score Row */}
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-700">Overall Score</span>
+                            <span className="text-sm font-medium text-gray-700">{t("overallScore")}</span>
                             <span className={cn("text-lg font-bold", getScoreColor(Number(assessment.overallScore) || 0))}>
                               {(() => {
                                 const score = Number(assessment.overallScore);
@@ -412,15 +412,15 @@ export default function Assessments() {
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs sm:text-sm">
                           <div className="flex items-center space-x-2">
                             <Target className="w-3 h-3 text-gray-500" />
-                            <span className="text-gray-600">Skills: {assessment.technicalSkills}</span>
+                            <span className="text-gray-600">{t("skills")}: {assessment.technicalSkills}</span>
                           </div>
                           <div className="flex items-center space-x-2">
                             <TrendingUp className="w-3 h-3 text-gray-500" />
-                            <span className="text-gray-600">Experience: {assessment.experienceMatch}</span>
+                            <span className="text-gray-600">{t("experience")}: {assessment.experienceMatch}</span>
                           </div>
                           <div className="flex items-center space-x-2">
                             <Star className="w-3 h-3 text-gray-500" />
-                            <span className="text-gray-600">Education: {assessment.education}</span>
+                            <span className="text-gray-600">{t("education")}: {assessment.education}</span>
                           </div>
                         </div>
 
@@ -429,7 +429,7 @@ export default function Assessments() {
                           <div className="border-t border-gray-100 pt-3">
                             <div className="flex items-center space-x-2 mb-2">
                               <Lightbulb className="w-4 h-4 text-blue-500" />
-                              <span className="text-sm font-medium text-gray-700">AI Insights</span>
+                              <span className="text-sm font-medium text-gray-700">{t("aiInsights")}</span>
                             </div>
                             <div className={cn(
                               "text-xs sm:text-sm text-gray-600 bg-blue-50 p-2 rounded",

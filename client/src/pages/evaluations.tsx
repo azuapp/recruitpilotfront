@@ -101,7 +101,7 @@ export default function Evaluations() {
     },
     onSuccess: (data) => {
       toast({
-        title: "Evaluation Complete",
+        title: t("evaluationCompleted"),
         description: `Successfully evaluated ${data.count || 0} candidates`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/evaluations"] });
@@ -119,8 +119,8 @@ export default function Evaluations() {
         return;
       }
       toast({
-        title: "Evaluation Failed",
-        description: error.message || "Failed to run candidate evaluation",
+        title: t("evaluationFailed"),
+        description: error.message || t("failedToRunEvaluation"),
         variant: "destructive",
       });
     },
@@ -130,7 +130,7 @@ export default function Evaluations() {
     if (!candidates || candidates.length === 0) {
       toast({
         title: "No Candidates",
-        description: "No candidates available for evaluation",
+        description: t("noCandidatesAvailable"),
         variant: "destructive",
       });
       return;
@@ -185,10 +185,10 @@ export default function Evaluations() {
   };
 
   const getScoreBadge = (score: number) => {
-    if (score >= 90) return { label: "Excellent", variant: "default" as const };
-    if (score >= 70) return { label: "Good", variant: "secondary" as const };
-    if (score >= 50) return { label: "Average", variant: "outline" as const };
-    return { label: "Poor", variant: "destructive" as const };
+    if (score >= 90) return { label: t("strongMatch"), variant: "default" as const };
+    if (score >= 70) return { label: t("good"), variant: "secondary" as const };
+    if (score >= 50) return { label: t("fair"), variant: "outline" as const };
+    return { label: t("weak"), variant: "destructive" as const };
   };
 
   const getInitials = (name: string) => {
@@ -234,16 +234,16 @@ export default function Evaluations() {
                 {t("evaluations")}
               </h1>
               <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-                Comprehensive candidate evaluation results and insights
+                {t("aiPoweredEvaluationDescription")}
               </p>
             </div>
             <div className="flex items-center gap-3">
               <Select value={selectedPosition} onValueChange={setSelectedPosition}>
                 <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Select position" />
+                  <SelectValue placeholder={t("selectPosition")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Positions</SelectItem>
+                  <SelectItem value="all">{t("allPositions")}</SelectItem>
                   {uniquePositions.map(position => (
                     <SelectItem key={position} value={position}>
                       {position.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
@@ -259,12 +259,12 @@ export default function Evaluations() {
                 {runEvaluationMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Evaluating...
+                    {t("evaluating")}
                   </>
                 ) : (
                   <>
                     <Target className="w-4 h-4 mr-2" />
-                    Run Evaluation
+                    {t("runEvaluation")}
                   </>
                 )}
               </Button>
@@ -281,7 +281,7 @@ export default function Evaluations() {
                       <Brain className="w-4 h-4 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-xs sm:text-sm text-gray-500">Total Evaluations</p>
+                      <p className="text-xs sm:text-sm text-gray-500">{t("totalEvaluated")}</p>
                       <p className="text-lg sm:text-xl font-bold">{stats.total}</p>
                     </div>
                   </div>
@@ -295,7 +295,7 @@ export default function Evaluations() {
                       <TrendingUp className="w-4 h-4 text-green-600" />
                     </div>
                     <div>
-                      <p className="text-xs sm:text-sm text-gray-500">Avg Score</p>
+                      <p className="text-xs sm:text-sm text-gray-500">{t("avgFitScore")}</p>
                       <p className="text-lg sm:text-xl font-bold">{stats.avgScore}%</p>
                     </div>
                   </div>
@@ -309,7 +309,7 @@ export default function Evaluations() {
                       <Star className="w-4 h-4 text-yellow-600" />
                     </div>
                     <div>
-                      <p className="text-xs sm:text-sm text-gray-500">Excellent</p>
+                      <p className="text-xs sm:text-sm text-gray-500">{t("strongMatch")}</p>
                       <p className="text-lg sm:text-xl font-bold">{stats.excellent}</p>
                     </div>
                   </div>
@@ -323,7 +323,7 @@ export default function Evaluations() {
                       <Award className="w-4 h-4 text-purple-600" />
                     </div>
                     <div>
-                      <p className="text-xs sm:text-sm text-gray-500">Recommended</p>
+                      <p className="text-xs sm:text-sm text-gray-500">{t("topRanked")}</p>
                       <p className="text-lg sm:text-xl font-bold">{stats.recommended}</p>
                     </div>
                   </div>
@@ -390,13 +390,13 @@ export default function Evaluations() {
           {evaluationsLoading ? (
             <div className="text-center py-8">
               <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-500" />
-              <div className="text-gray-500 mt-2">Loading evaluations...</div>
+              <div className="text-gray-500 mt-2">{t("loadingEvaluations")}</div>
             </div>
           ) : !filteredEvaluations || filteredEvaluations.length === 0 ? (
             <Card>
               <CardContent className="p-6 sm:p-8 text-center">
                 <Brain className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No evaluations found</h3>
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">{t("noEvaluationsFound")}</h3>
                 <p className="text-sm sm:text-base text-gray-500 mb-4">
                   {search || positionFilter !== "all" || scoreFilter !== "all"
                     ? "Try adjusting your search filters to see more evaluations."
@@ -411,12 +411,12 @@ export default function Evaluations() {
                     {runEvaluationMutation.isPending ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Evaluating...
+                        {t("evaluating")}
                       </>
                     ) : (
                       <>
                         <Target className="w-4 h-4 mr-2" />
-                        Run Your First Evaluation
+                        {t("startEvaluation")}
                       </>
                     )}
                   </Button>
@@ -444,7 +444,7 @@ export default function Evaluations() {
                             </Avatar>
                             <div className="flex-1 min-w-0">
                               <h3 className="text-sm sm:text-base font-medium text-gray-900 truncate">
-                                {candidate?.fullName || 'Unknown Candidate'}
+                                {candidate?.fullName || t("unknownCandidate")}
                               </h3>
                               <p className="text-xs sm:text-sm text-gray-500 truncate">
                                 {candidate?.position || 'N/A'}
@@ -461,7 +461,7 @@ export default function Evaluations() {
                         {/* Overall Score */}
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-700">Overall Score</span>
+                            <span className="text-sm font-medium text-gray-700">{t("overallScore")}</span>
                             <span className={cn("text-lg font-bold", getScoreColor(evaluation.fitScore))}>
                               {evaluation.fitScore}%
                             </span>
