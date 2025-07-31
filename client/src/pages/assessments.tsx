@@ -8,6 +8,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import Sidebar from "@/components/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +52,8 @@ export default function Assessments() {
   
   const [deletingAssessmentId, setDeletingAssessmentId] = useState<string | null>(null);
   const [expandedAssessments, setExpandedAssessments] = useState<Set<string>>(new Set());
+  const [selectedPosition, setSelectedPosition] = useState<string>("all");
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string>("");
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -145,6 +148,71 @@ export default function Assessments() {
     },
   });
 
+  const positionAssessmentMutation = useMutation({
+    mutationFn: async (position: string) => {
+      const response = await apiRequest("POST", `/api/assessments/position/${position}`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assessments"] });
+      toast({
+        title: t("positionAssessmentCompleted"),
+        description: data.message || `Processed ${data.processed || 0} candidates`,
+      });
+    },
+    onError: (error: any) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/auth";
+        }, 500);
+        return;
+      }
+      toast({
+        title: t("assessmentFailed"),
+        description: error.message || t("failedToRunPositionAssessment"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const candidateAssessmentMutation = useMutation({
+    mutationFn: async (candidateId: string) => {
+      const response = await apiRequest("POST", `/api/assessments/candidate/${candidateId}`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assessments"] });
+      toast({
+        title: t("candidateAssessmentCompleted"),
+        description: data.message || "Assessment completed successfully",
+      });
+      setSelectedCandidateId("");
+    },
+    onError: (error: any) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/auth";
+        }, 500);
+        return;
+      }
+      toast({
+        title: t("assessmentFailed"),
+        description: error.message || t("failedToRunCandidateAssessment"),
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleBulkAssessment = () => {
     if (!candidates?.length) {
       toast({
@@ -155,6 +223,30 @@ export default function Assessments() {
       return;
     }
     bulkAssessmentMutation.mutate();
+  };
+
+  const handlePositionAssessment = () => {
+    if (selectedPosition === "all") {
+      toast({
+        title: t("selectPosition"),
+        description: t("pleaseSelectPosition"),
+        variant: "destructive",
+      });
+      return;
+    }
+    positionAssessmentMutation.mutate(selectedPosition);
+  };
+
+  const handleCandidateAssessment = () => {
+    if (!selectedCandidateId) {
+      toast({
+        title: t("selectCandidate"),
+        description: t("pleaseSelectCandidate"),
+        variant: "destructive",
+      });
+      return;
+    }
+    candidateAssessmentMutation.mutate(selectedCandidateId);
   };
 
   const handleDeleteAssessment = (assessment: Assessment) => {
@@ -209,6 +301,27 @@ export default function Assessments() {
       .slice(0, 2);
   };
 
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Get unique positions from candidates
+  const uniquePositions = candidates 
+    ? Array.from(new Set(candidates.map(c => c.position))).filter(Boolean)
+    : [];
+
+  // Get candidates without assessments for individual assessment
+  const candidatesWithoutAssessment = candidates?.filter(candidate => 
+    !assessments?.some(assessment => assessment.candidateId === candidate.id)
+  ) || [];
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -236,7 +349,8 @@ export default function Assessments() {
                 {t("aiPoweredCandidateAssessments")}
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Bulk Assessment */}
               <Button
                 onClick={handleBulkAssessment}
                 disabled={bulkAssessmentMutation.isPending}
@@ -254,6 +368,73 @@ export default function Assessments() {
                   </>
                 )}
               </Button>
+
+              {/* Position Assessment */}
+              <div className="flex gap-2">
+                <Select value={selectedPosition} onValueChange={setSelectedPosition}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder={t("selectPosition")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("allPositions")}</SelectItem>
+                    {uniquePositions.map(position => (
+                      <SelectItem key={position} value={position}>
+                        {position.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  onClick={handlePositionAssessment}
+                  disabled={positionAssessmentMutation.isPending || selectedPosition === "all"}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {positionAssessmentMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {t("processing")}
+                    </>
+                  ) : (
+                    <>
+                      <Target className="w-4 h-4 mr-2" />
+                      {t("assessByPosition")}
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Individual Candidate Assessment */}
+              <div className="flex gap-2">
+                <Select value={selectedCandidateId} onValueChange={setSelectedCandidateId}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder={t("selectCandidate")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {candidatesWithoutAssessment.map(candidate => (
+                      <SelectItem key={candidate.id} value={candidate.id}>
+                        {candidate.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  onClick={handleCandidateAssessment}
+                  disabled={candidateAssessmentMutation.isPending || !selectedCandidateId}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  {candidateAssessmentMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {t("processing")}
+                    </>
+                  ) : (
+                    <>
+                      <User className="w-4 h-4 mr-2" />
+                      {t("assessCandidate")}
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
 

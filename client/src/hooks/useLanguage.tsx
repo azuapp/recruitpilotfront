@@ -221,6 +221,17 @@ const translations = {
     failed: "Failed",
     scheduled: "Scheduled",
     
+    // Assessment actions
+    positionAssessmentCompleted: "Position Assessment Completed",
+    failedToRunPositionAssessment: "Failed to run position assessment",
+    candidateAssessmentCompleted: "Candidate Assessment Completed", 
+    failedToRunCandidateAssessment: "Failed to run candidate assessment",
+    pleaseSelectPosition: "Please select a position to assess",
+    selectCandidate: "Select Candidate",
+    pleaseSelectCandidate: "Please select a candidate to assess",
+    assessByPosition: "Assess by Position",
+    assessCandidate: "Assess Candidate",
+    
     // Form labels
     firstName: "First Name",
     lastName: "Last Name",
@@ -437,6 +448,17 @@ const translations = {
     pending: "قيد الانتظار",
     failed: "فشل",
     scheduled: "مجدولة",
+    
+    // Assessment actions
+    positionAssessmentCompleted: "تم إكمال تقييم المنصب",
+    failedToRunPositionAssessment: "فشل في تشغيل تقييم المنصب",
+    candidateAssessmentCompleted: "تم إكمال تقييم المرشح", 
+    failedToRunCandidateAssessment: "فشل في تشغيل تقييم المرشح",
+    pleaseSelectPosition: "يرجى اختيار منصب للتقييم",
+    selectCandidate: "اختيار مرشح",
+    pleaseSelectCandidate: "يرجى اختيار مرشح للتقييم",
+    assessByPosition: "تقييم حسب المنصب",
+    assessCandidate: "تقييم المرشح",
     
     // Form labels
     firstName: "الاسم الأول",
