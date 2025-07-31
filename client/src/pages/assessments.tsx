@@ -311,7 +311,7 @@ export default function Assessments() {
                       <p className="text-xs sm:text-sm text-gray-500">{t("highScores")}</p>
                       <p className="text-lg sm:text-xl font-bold">
                         {assessments.filter(a => {
-                          const score = parseFloat(a.overallScore);
+                          const score = parseFloat(String(a.overallScore));
                           return a.overallScore != null && !isNaN(score) && score >= 80;
                         }).length}
                       </p>
@@ -356,7 +356,14 @@ export default function Assessments() {
             </Card>
           ) : (
             <div className="space-y-3 sm:space-y-4">
-              {assessments.map((assessment) => {
+              {assessments
+                .sort((a, b) => {
+                  // Sort by overall score in descending order (highest first)
+                  const scoreA = Number(a.overallScore) || 0;
+                  const scoreB = Number(b.overallScore) || 0;
+                  return scoreB - scoreA;
+                })
+                .map((assessment) => {
                 const candidate = candidates?.find(c => c.id === assessment.candidateId);
                 const isExpanded = expandedAssessments.has(assessment.id);
                 
