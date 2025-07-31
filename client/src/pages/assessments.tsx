@@ -113,6 +113,50 @@ export default function Assessments() {
     },
   });
 
+  const bulkAssessmentMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/assessments/bulk");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assessments"] });
+      toast({
+        title: "Bulk Assessment Completed",
+        description: data.message || `Processed ${data.processed || 0} candidates`,
+      });
+    },
+    onError: (error: any) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/auth";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Assessment Failed",
+        description: error.message || "Failed to run bulk assessment",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleBulkAssessment = () => {
+    if (!candidates?.length) {
+      toast({
+        title: "No Candidates",
+        description: "No candidates available for assessment",
+        variant: "destructive",
+      });
+      return;
+    }
+    bulkAssessmentMutation.mutate();
+  };
+
   const handleDeleteAssessment = (assessment: Assessment) => {
     if (!confirm('Are you sure you want to delete this assessment?')) return;
     deleteAssessmentMutation.mutate(assessment.id);
@@ -192,6 +236,25 @@ export default function Assessments() {
                 AI-powered candidate assessments and insights
               </p>
             </div>
+            <div className="flex gap-3">
+              <Button
+                onClick={handleBulkAssessment}
+                disabled={bulkAssessmentMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {bulkAssessmentMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="w-4 h-4 mr-2" />
+                    Run Bulk Assessment
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* Summary Stats */}
@@ -222,11 +285,14 @@ export default function Assessments() {
                       <p className="text-lg sm:text-xl font-bold">
                         {(() => {
                           const validScores = assessments.filter(a => {
-                            const score = parseFloat(a.overallScore);
+                            const score = typeof a.overallScore === 'number' ? a.overallScore : parseFloat(String(a.overallScore));
                             return a.overallScore != null && !isNaN(score);
                           });
                           if (validScores.length === 0) return "N/A";
-                          const average = validScores.reduce((acc, a) => acc + parseFloat(a.overallScore), 0) / validScores.length;
+                          const average = validScores.reduce((acc, a) => {
+                            const score = typeof a.overallScore === 'number' ? a.overallScore : parseFloat(String(a.overallScore));
+                            return acc + score;
+                          }, 0) / validScores.length;
                           return Math.round(average) + "%";
                         })()}
                       </p>
@@ -324,18 +390,18 @@ export default function Assessments() {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-gray-700">Overall Score</span>
-                            <span className={cn("text-lg font-bold", getScoreColor(parseFloat(assessment.overallScore) || 0))}>
+                            <span className={cn("text-lg font-bold", getScoreColor(Number(assessment.overallScore) || 0))}>
                               {(() => {
-                                const score = parseFloat(assessment.overallScore);
+                                const score = Number(assessment.overallScore);
                                 return assessment.overallScore != null && !isNaN(score) ? `${Math.round(score)}%` : 'N/A';
                               })()}
                             </span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div 
-                              className={cn("h-2 rounded-full transition-all", getScoreBackground(parseFloat(assessment.overallScore) || 0))}
+                              className={cn("h-2 rounded-full transition-all", getScoreBackground(Number(assessment.overallScore) || 0))}
                               style={{ width: `${(() => {
-                                const score = parseFloat(assessment.overallScore);
+                                const score = Number(assessment.overallScore);
                                 return assessment.overallScore != null && !isNaN(score) ? score : 0;
                               })()}%` }}
                             />
