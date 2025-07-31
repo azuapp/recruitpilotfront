@@ -86,7 +86,24 @@ export default function JobDescriptions() {
 
   const createJobMutation = useMutation({
     mutationFn: async (data: typeof jobForm) => {
-      const res = await apiRequest("POST", "/api/job-descriptions", data);
+      // Clean up the data before sending
+      const cleanData = {
+        ...data,
+        // Remove empty strings and zero values for optional fields
+        title: data.title || undefined,
+        description: data.description || undefined,
+        responsibilities: data.responsibilities || undefined,
+        requirements: data.requirements || undefined,
+        requiredExperience: data.requiredExperience || undefined,
+        benefits: data.benefits || undefined,
+        experienceLevel: data.experienceLevel || undefined,
+        location: data.location || undefined,
+        notes: data.notes || undefined,
+        salaryMin: data.salaryMin > 0 ? data.salaryMin : undefined,
+        salaryMax: data.salaryMax > 0 ? data.salaryMax : undefined,
+      };
+      console.log('Sending cleaned job data:', cleanData);
+      const res = await apiRequest("POST", "/api/job-descriptions", cleanData);
       return await res.json();
     },
     onSuccess: () => {

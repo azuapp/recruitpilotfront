@@ -28,9 +28,11 @@ router.get('/job-descriptions/:id', requireAuth, asyncHandler(async (req: Reques
 
 // Create job description
 router.post('/job-descriptions', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  logger.info('Creating job description - received data:', { body: req.body });
+  
   const validatedData = ValidationService.validate(jobDescriptionValidationSchema, req.body);
   
-  logger.info('Creating job description', { 
+  logger.info('Creating job description - validated data:', { 
     title: validatedData.title,
     position: validatedData.position 
   });
