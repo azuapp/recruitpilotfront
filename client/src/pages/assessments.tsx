@@ -220,7 +220,12 @@ export default function Assessments() {
                     <div>
                       <p className="text-xs sm:text-sm text-gray-500">Avg Score</p>
                       <p className="text-lg sm:text-xl font-bold">
-                        {Math.round(assessments.reduce((acc, a) => acc + a.overallScore, 0) / assessments.length)}%
+                        {(() => {
+                          const validScores = assessments.filter(a => a.overallScore != null && !isNaN(a.overallScore));
+                          if (validScores.length === 0) return "N/A";
+                          const average = validScores.reduce((acc, a) => acc + a.overallScore, 0) / validScores.length;
+                          return Math.round(average) + "%";
+                        })()}
                       </p>
                     </div>
                   </div>
@@ -236,7 +241,7 @@ export default function Assessments() {
                     <div>
                       <p className="text-xs sm:text-sm text-gray-500">High Scores</p>
                       <p className="text-lg sm:text-xl font-bold">
-                        {assessments.filter(a => a.overallScore >= 80).length}
+                        {assessments.filter(a => a.overallScore != null && !isNaN(a.overallScore) && a.overallScore >= 80).length}
                       </p>
                     </div>
                   </div>
@@ -313,14 +318,14 @@ export default function Assessments() {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-gray-700">Overall Score</span>
-                            <span className={cn("text-lg font-bold", getScoreColor(assessment.overallScore))}>
-                              {assessment.overallScore}%
+                            <span className={cn("text-lg font-bold", getScoreColor(assessment.overallScore || 0))}>
+                              {assessment.overallScore != null && !isNaN(assessment.overallScore) ? `${assessment.overallScore}%` : 'N/A'}
                             </span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div 
-                              className={cn("h-2 rounded-full transition-all", getScoreBackground(assessment.overallScore))}
-                              style={{ width: `${assessment.overallScore}%` }}
+                              className={cn("h-2 rounded-full transition-all", getScoreBackground(assessment.overallScore || 0))}
+                              style={{ width: `${assessment.overallScore != null && !isNaN(assessment.overallScore) ? assessment.overallScore : 0}%` }}
                             />
                           </div>
                         </div>
