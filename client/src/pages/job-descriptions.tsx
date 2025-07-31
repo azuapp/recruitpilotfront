@@ -693,7 +693,7 @@ export default function JobDescriptions() {
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm">Job Title *</Label>
+                    <Label className="text-sm">Job Title</Label>
                     <Input
                       placeholder="e.g. Senior Software Engineer"
                       value={jobForm.title}
@@ -702,11 +702,11 @@ export default function JobDescriptions() {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm">Department *</Label>
+                    <Label className="text-sm">Position *</Label>
                     <Input
-                      placeholder="e.g. Engineering"
-                      value={jobForm.department}
-                      onChange={(e) => setJobForm({ ...jobForm, department: e.target.value })}
+                      placeholder="e.g. backend-developer"
+                      value={jobForm.position}
+                      onChange={(e) => setJobForm({ ...jobForm, position: e.target.value })}
                       className="mt-2"
                     />
                   </div>
@@ -720,10 +720,19 @@ export default function JobDescriptions() {
                     />
                   </div>
                   <div>
+                    <Label className="text-sm">Department</Label>
+                    <Input
+                      placeholder="e.g. Engineering"
+                      value={jobForm.department}
+                      onChange={(e) => setJobForm({ ...jobForm, department: e.target.value })}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
                     <Label className="text-sm">Employment Type</Label>
                     <Select value={jobForm.employmentType} onValueChange={(value) => setJobForm({ ...jobForm, employmentType: value })}>
                       <SelectTrigger className="mt-2">
-                        <SelectValue />
+                        <SelectValue placeholder="Select employment type" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="full-time">Full-time</SelectItem>
@@ -731,6 +740,35 @@ export default function JobDescriptions() {
                         <SelectItem value="contract">Contract</SelectItem>
                         <SelectItem value="freelance">Freelance</SelectItem>
                         <SelectItem value="internship">Internship</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm">Experience Level</Label>
+                    <Select value={jobForm.experienceLevel} onValueChange={(value) => setJobForm({ ...jobForm, experienceLevel: value })}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Select experience level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Entry-level">Entry-level</SelectItem>
+                        <SelectItem value="Mid-level">Mid-level</SelectItem>
+                        <SelectItem value="Senior-level">Senior-level</SelectItem>
+                        <SelectItem value="Lead">Lead</SelectItem>
+                        <SelectItem value="Executive">Executive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm">Status</Label>
+                    <Select value={jobForm.status} onValueChange={(value) => setJobForm({ ...jobForm, status: value })}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="closed">Closed</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -743,53 +781,86 @@ export default function JobDescriptions() {
                       className="mt-2"
                     />
                   </div>
-                  <div>
-                    <Label className="text-sm">Status</Label>
-                    <Select value={jobForm.status} onValueChange={(value) => setJobForm({ ...jobForm, status: value })}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="closed">Closed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm">Skills *</Label>
+                  <Input
+                    placeholder="e.g. JavaScript, React, Node.js"
+                    value={jobForm.skills}
+                    onChange={(e) => setJobForm({ ...jobForm, skills: e.target.value })}
+                    className="mt-2"
+                  />
                 </div>
 
                 <div>
-                  <Label className="text-sm">Job Description *</Label>
+                  <Label className="text-sm">Description</Label>
                   <Textarea
-                    placeholder="Describe the role, responsibilities, and what the candidate will be doing..."
+                    placeholder="Detailed job description..."
                     value={jobForm.description}
                     onChange={(e) => setJobForm({ ...jobForm, description: e.target.value })}
-                    rows={4}
-                    className="mt-2"
+                    className="mt-2 min-h-[60px]"
+                    rows={3}
                   />
                 </div>
-
                 <div>
-                  <Label className="text-sm">Requirements *</Label>
+                  <Label className="text-sm">Responsibilities</Label>
                   <Textarea
-                    placeholder="List the required skills, experience, and qualifications..."
+                    placeholder="Key responsibilities and duties..."
+                    value={jobForm.responsibilities}
+                    onChange={(e) => setJobForm({ ...jobForm, responsibilities: e.target.value })}
+                    className="mt-2 min-h-[60px]"
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm">Requirements</Label>
+                  <Textarea
+                    placeholder="Job requirements and qualifications..."
                     value={jobForm.requirements}
                     onChange={(e) => setJobForm({ ...jobForm, requirements: e.target.value })}
-                    rows={4}
-                    className="mt-2"
+                    className="mt-2 min-h-[60px]"
+                    rows={3}
                   />
                 </div>
-
+                <div>
+                  <Label className="text-sm">Required Experience</Label>
+                  <Textarea
+                    placeholder="Required years of experience and specific expertise..."
+                    value={jobForm.requiredExperience}
+                    onChange={(e) => setJobForm({ ...jobForm, requiredExperience: e.target.value })}
+                    className="mt-2 min-h-[60px]"
+                    rows={3}
+                  />
+                </div>
                 <div>
                   <Label className="text-sm">Benefits</Label>
                   <Textarea
-                    placeholder="List company benefits, perks, and additional information..."
+                    placeholder="Employee benefits and perks..."
                     value={jobForm.benefits}
                     onChange={(e) => setJobForm({ ...jobForm, benefits: e.target.value })}
+                    className="mt-2 min-h-[60px]"
                     rows={3}
-                    className="mt-2"
                   />
+                </div>
+                <div>
+                  <Label className="text-sm">Notes</Label>
+                  <Textarea
+                    placeholder="Additional notes or comments..."
+                    value={jobForm.notes}
+                    onChange={(e) => setJobForm({ ...jobForm, notes: e.target.value })}
+                    className="mt-2 min-h-[60px]"
+                    rows={3}
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="isActive-edit"
+                    checked={jobForm.isActive}
+                    onChange={(e) => setJobForm({ ...jobForm, isActive: e.target.checked })}
+                    className="rounded"
+                  />
+                  <Label htmlFor="isActive-edit" className="text-sm">Active Position</Label>
                 </div>
 
                 <div className="flex justify-end space-x-2">
