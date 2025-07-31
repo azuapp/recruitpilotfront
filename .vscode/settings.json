@@ -1,0 +1,9 @@
+{
+    "vim.overrideCopy": false,
+    "vim.surround": false,
+    "vim.targets.smartQuotes.aIncludesSurroundingSpaces": false,
+    "vim.targets.smartQuotes.breakThroughLines": false,
+    "vim.targets.smartQuotes.enable": false,
+    "vim.useCtrlKeys": false,
+    "vim.easymotionDimBackground": false
+}
