@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { storage } from '../storage';
 import { asyncHandler } from '../services/errorHandler';
 import { ValidationService, jobDescriptionValidationSchema } from '../services/validationService';
@@ -8,13 +8,13 @@ import { logger } from '../services/logger';
 const router = Router();
 
 // Get all job descriptions
-router.get('/job-descriptions', requireAuth, asyncHandler(async (req, res) => {
+router.get('/job-descriptions', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const jobDescriptions = await storage.getJobDescriptions();
   res.json(jobDescriptions);
 }));
 
 // Get job description by ID
-router.get('/job-descriptions/:id', requireAuth, asyncHandler(async (req, res) => {
+router.get('/job-descriptions/:id', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   
   const jobDescription = await storage.getJobDescriptionById(id);
@@ -27,7 +27,7 @@ router.get('/job-descriptions/:id', requireAuth, asyncHandler(async (req, res) =
 }));
 
 // Create job description
-router.post('/job-descriptions', requireAuth, asyncHandler(async (req, res) => {
+router.post('/job-descriptions', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const validatedData = ValidationService.validate(jobDescriptionValidationSchema, req.body);
   
   logger.info('Creating job description', { 
@@ -42,7 +42,7 @@ router.post('/job-descriptions', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 // Update job description
-router.put('/job-descriptions/:id', requireAuth, asyncHandler(async (req, res) => {
+router.put('/job-descriptions/:id', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   
   // Validate partial data for updates - support both old and new schema fields
@@ -71,7 +71,7 @@ router.put('/job-descriptions/:id', requireAuth, asyncHandler(async (req, res) =
 }));
 
 // Delete job description (soft delete)
-router.delete('/job-descriptions/:id', requireAuth, asyncHandler(async (req, res) => {
+router.delete('/job-descriptions/:id', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   
   logger.info('Deleting job description', { jobDescriptionId: id });
@@ -83,7 +83,7 @@ router.delete('/job-descriptions/:id', requireAuth, asyncHandler(async (req, res
 }));
 
 // Get candidates with fit scores for a job
-router.get('/job-descriptions/:id/candidates', requireAuth, asyncHandler(async (req, res) => {
+router.get('/job-descriptions/:id/candidates', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   
   const candidatesWithFitScores = await storage.getCandidatesWithFitScores(id);
@@ -92,13 +92,13 @@ router.get('/job-descriptions/:id/candidates', requireAuth, asyncHandler(async (
 }));
 
 // Calculate job fit score
-router.post('/job-descriptions/:id/calculate-fit/:candidateId', requireAuth, asyncHandler(async (req, res) => {
+router.post('/job-descriptions/:id/calculate-fit/:candidateId', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { id: jobDescriptionId, candidateId } = req.params;
   
   logger.info('Calculating job fit score', { jobDescriptionId, candidateId });
   
   // Import the service dynamically to avoid circular dependencies
-  const { calculateJobFitScore } = await import('../services/assessmentService');
+  const { calculateJobFitScore } = await import('../services/jobFitService');
   
   try {
     const fitScore = await calculateJobFitScore(candidateId, jobDescriptionId);

@@ -19,15 +19,20 @@ import { cn } from "@/lib/utils";
 
 interface JobDescription {
   id: string;
-  title: string;
-  department: string;
-  location: string;
-  employmentType: string;
-  salaryRange?: string;
-  description: string;
-  requirements: string;
+  title?: string;
+  position: string;
+  description?: string;
+  responsibilities?: string;
+  requirements?: string;
+  requiredExperience?: string;
   benefits?: string;
-  status: string;
+  skills: string;
+  experienceLevel?: string;
+  location?: string;
+  salaryMin?: number;
+  salaryMax?: number;
+  notes?: string;
+  isActive?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -45,14 +50,19 @@ export default function JobDescriptions() {
   
   const [jobForm, setJobForm] = useState({
     title: "",
-    department: "",
-    location: "",
-    employmentType: "full-time",
-    salaryRange: "",
+    position: "",
     description: "",
+    responsibilities: "",
     requirements: "",
+    requiredExperience: "",
     benefits: "",
-    status: "active"
+    skills: "",
+    experienceLevel: "",
+    location: "",
+    salaryMin: 0,
+    salaryMax: 0,
+    notes: "",
+    isActive: true
   });
 
   // Redirect if not authenticated
@@ -183,22 +193,27 @@ export default function JobDescriptions() {
   const resetForm = () => {
     setJobForm({
       title: "",
-      department: "",
-      location: "",
-      employmentType: "full-time",
-      salaryRange: "",
+      position: "",
       description: "",
+      responsibilities: "",
       requirements: "",
+      requiredExperience: "",
       benefits: "",
-      status: "active"
+      skills: "",
+      experienceLevel: "",
+      location: "",
+      salaryMin: 0,
+      salaryMax: 0,
+      notes: "",
+      isActive: true
     });
   };
 
   const handleCreateJob = () => {
-    if (!jobForm.title || !jobForm.department || !jobForm.description || !jobForm.requirements) {
+    if (!jobForm.position || !jobForm.skills) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields",
+        description: "Please fill in position and skills (required fields)",
         variant: "destructive",
       });
       return;
@@ -209,24 +224,29 @@ export default function JobDescriptions() {
   const handleEditJob = (job: JobDescription) => {
     setEditingJob(job);
     setJobForm({
-      title: job.title,
-      department: job.department,
-      location: job.location,
-      employmentType: job.employmentType,
-      salaryRange: job.salaryRange || "",
-      description: job.description,
-      requirements: job.requirements,
+      title: job.title || "",
+      position: job.position,
+      description: job.description || "",
+      responsibilities: job.responsibilities || "",
+      requirements: job.requirements || "",
+      requiredExperience: job.requiredExperience || "",
       benefits: job.benefits || "",
-      status: job.status
+      skills: job.skills,
+      experienceLevel: job.experienceLevel || "",
+      location: job.location || "",
+      salaryMin: job.salaryMin || 0,
+      salaryMax: job.salaryMax || 0,
+      notes: job.notes || "",
+      isActive: job.isActive !== false
     });
     setIsEditDialogOpen(true);
   };
 
   const handleUpdateJob = () => {
-    if (!editingJob || !jobForm.title || !jobForm.department || !jobForm.description || !jobForm.requirements) {
+    if (!editingJob || !jobForm.position || !jobForm.skills) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields",
+        description: "Please fill in position and skills (required fields)",
         variant: "destructive",
       });
       return;
@@ -235,7 +255,7 @@ export default function JobDescriptions() {
   };
 
   const handleDeleteJob = (job: JobDescription) => {
-    if (!confirm(`Are you sure you want to delete the job "${job.title}"?`)) return;
+    if (!confirm(`Are you sure you want to delete the job "${job.title || job.position}"?`)) return;
     deleteJobMutation.mutate(job.id);
   };
 
@@ -307,7 +327,7 @@ export default function JobDescriptions() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm">Job Title *</Label>
+                      <Label className="text-sm">Job Title</Label>
                       <Input
                         placeholder="e.g. Senior Software Engineer"
                         value={jobForm.title}
@@ -316,11 +336,11 @@ export default function JobDescriptions() {
                       />
                     </div>
                     <div>
-                      <Label className="text-sm">Department *</Label>
+                      <Label className="text-sm">Position *</Label>
                       <Input
-                        placeholder="e.g. Engineering"
-                        value={jobForm.department}
-                        onChange={(e) => setJobForm({ ...jobForm, department: e.target.value })}
+                        placeholder="e.g. backend-developer"
+                        value={jobForm.position}
+                        onChange={(e) => setJobForm({ ...jobForm, position: e.target.value })}
                         className="mt-2"
                       />
                     </div>
@@ -334,89 +354,136 @@ export default function JobDescriptions() {
                       />
                     </div>
                     <div>
-                      <Label className="text-sm">Employment Type</Label>
-                      <Select value={jobForm.employmentType} onValueChange={(value) => setJobForm({ ...jobForm, employmentType: value })}>
+                      <Label className="text-sm">Experience Level</Label>
+                      <Select value={jobForm.experienceLevel} onValueChange={(value) => setJobForm({ ...jobForm, experienceLevel: value })}>
                         <SelectTrigger className="mt-2">
-                          <SelectValue />
+                          <SelectValue placeholder="Select experience level" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="full-time">Full-time</SelectItem>
-                          <SelectItem value="part-time">Part-time</SelectItem>
-                          <SelectItem value="contract">Contract</SelectItem>
-                          <SelectItem value="freelance">Freelance</SelectItem>
-                          <SelectItem value="internship">Internship</SelectItem>
+                          <SelectItem value="Entry-level">Entry-level</SelectItem>
+                          <SelectItem value="Mid-level">Mid-level</SelectItem>
+                          <SelectItem value="Senior-level">Senior-level</SelectItem>
+                          <SelectItem value="Lead">Lead</SelectItem>
+                          <SelectItem value="Executive">Executive</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-sm">Salary Range</Label>
+                      <Label className="text-sm">Salary Min</Label>
                       <Input
-                        placeholder="e.g. $80,000 - $120,000"
-                        value={jobForm.salaryRange}
-                        onChange={(e) => setJobForm({ ...jobForm, salaryRange: e.target.value })}
+                        type="number"
+                        placeholder="80000"
+                        value={jobForm.salaryMin || ''}
+                        onChange={(e) => setJobForm({ ...jobForm, salaryMin: parseInt(e.target.value) || 0 })}
                         className="mt-2"
                       />
                     </div>
                     <div>
-                      <Label className="text-sm">Status</Label>
-                      <Select value={jobForm.status} onValueChange={(value) => setJobForm({ ...jobForm, status: value })}>
-                        <SelectTrigger className="mt-2">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                          <SelectItem value="draft">Draft</SelectItem>
-                          <SelectItem value="closed">Closed</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label className="text-sm">Salary Max</Label>
+                      <Input
+                        type="number"
+                        placeholder="120000"
+                        value={jobForm.salaryMax || ''}
+                        onChange={(e) => setJobForm({ ...jobForm, salaryMax: parseInt(e.target.value) || 0 })}
+                        className="mt-2"
+                      />
                     </div>
                   </div>
-
                   <div>
-                    <Label className="text-sm">Job Description *</Label>
+                    <Label className="text-sm">Skills *</Label>
+                    <Input
+                      placeholder="e.g. React, Node.js, TypeScript, AWS"
+                      value={jobForm.skills}
+                      onChange={(e) => setJobForm({ ...jobForm, skills: e.target.value })}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm">Description</Label>
                     <Textarea
-                      placeholder="Describe the role, responsibilities, and what the candidate will be doing..."
+                      placeholder="Detailed job description..."
                       value={jobForm.description}
                       onChange={(e) => setJobForm({ ...jobForm, description: e.target.value })}
-                      rows={4}
                       className="mt-2"
+                      rows={3}
                     />
                   </div>
-
                   <div>
-                    <Label className="text-sm">Requirements *</Label>
+                    <Label className="text-sm">Responsibilities</Label>
                     <Textarea
-                      placeholder="List the required skills, experience, and qualifications..."
+                      placeholder="List of key responsibilities..."
+                      value={jobForm.responsibilities}
+                      onChange={(e) => setJobForm({ ...jobForm, responsibilities: e.target.value })}
+                      className="mt-2"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm">Requirements</Label>
+                    <Textarea
+                      placeholder="Required qualifications and experience..."
                       value={jobForm.requirements}
                       onChange={(e) => setJobForm({ ...jobForm, requirements: e.target.value })}
-                      rows={4}
                       className="mt-2"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-sm">Benefits</Label>
-                    <Textarea
-                      placeholder="List company benefits, perks, and additional information..."
-                      value={jobForm.benefits}
-                      onChange={(e) => setJobForm({ ...jobForm, benefits: e.target.value })}
                       rows={3}
-                      className="mt-2"
                     />
                   </div>
-
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => setIsCreateDialogOpen(false)}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm">Required Experience</Label>
+                      <Textarea
+                        placeholder="Specific experience requirements..."
+                        value={jobForm.requiredExperience}
+                        onChange={(e) => setJobForm({ ...jobForm, requiredExperience: e.target.value })}
+                        className="mt-2"
+                        rows={2}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm">Benefits</Label>
+                      <Textarea
+                        placeholder="Benefits and perks..."
+                        value={jobForm.benefits}
+                        onChange={(e) => setJobForm({ ...jobForm, benefits: e.target.value })}
+                        className="mt-2"
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm">Notes</Label>
+                    <Textarea
+                      placeholder="Additional notes or comments..."
+                      value={jobForm.notes}
+                      onChange={(e) => setJobForm({ ...jobForm, notes: e.target.value })}
+                      className="mt-2"
+                      rows={2}
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="isActive"
+                      checked={jobForm.isActive}
+                      onChange={(e) => setJobForm({ ...jobForm, isActive: e.target.checked })}
+                      className="w-4 h-4"
+                    />
+                    <Label htmlFor="isActive" className="text-sm">Active Position</Label>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsCreateDialogOpen(false)}
+                      className="text-sm"
+                    >
                       Cancel
                     </Button>
-                    <Button size="sm" onClick={handleCreateJob} disabled={createJobMutation.isPending}>
-                      {createJobMutation.isPending ? (
-                        <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                      ) : (
-                        <Plus className="w-3 h-3 mr-1" />
-                      )}
-                      Create Job
+                    <Button
+                      onClick={() => createJobMutation.mutate(jobForm)}
+                      disabled={!jobForm.position || !jobForm.skills || createJobMutation.isPending}
+                      className="text-sm"
+                    >
+                      {createJobMutation.isPending ? "Creating..." : "Create Job"}
                     </Button>
                   </div>
                 </div>
