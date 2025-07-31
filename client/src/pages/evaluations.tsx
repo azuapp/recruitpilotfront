@@ -447,7 +447,7 @@ export default function Evaluations() {
                                 {candidate?.fullName || t("unknownCandidate")}
                               </h3>
                               <p className="text-xs sm:text-sm text-gray-500 truncate">
-                                {candidate?.position || 'N/A'}
+                                {candidate?.position ? candidate.position.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A'}
                               </p>
                             </div>
                           </div>
