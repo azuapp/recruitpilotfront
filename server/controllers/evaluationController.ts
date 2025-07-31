@@ -183,9 +183,9 @@ export const runEvaluation = async (req: Request, res: Response) => {
     logger.info("Creating test evaluation results");
     
     const allCandidates = await storage.getCandidates();
-    const targetCandidates = position === "all" 
-      ? allCandidates 
-      : allCandidates.filter((c: any) => c.position === position);
+    const targetCandidates = position && position !== "all" 
+      ? allCandidates.filter((c: any) => c.position === position)
+      : allCandidates;
 
     if (targetCandidates.length === 0) {
       logger.warn("No candidates found for evaluation");
@@ -206,8 +206,8 @@ export const runEvaluation = async (req: Request, res: Response) => {
     }));
 
     // Sort by fit score and assign rankings
-    testResults.sort((a, b) => b.fitScore - a.fitScore);
-    testResults.forEach((evaluation, index) => {
+    testResults.sort((a: EvaluationResult, b: EvaluationResult) => b.fitScore - a.fitScore);
+    testResults.forEach((evaluation: EvaluationResult, index: number) => {
       evaluation.ranking = index + 1;
     });
 
