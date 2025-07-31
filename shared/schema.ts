@@ -107,8 +107,6 @@ export const jobDescriptions = pgTable("job_descriptions", {
   skills: text("skills").notNull(),
   experienceLevel: varchar("experience_level"),
   location: varchar("location"),
-  salaryMin: integer("salary_min"),
-  salaryMax: integer("salary_max"),
   notes: text("notes"),
   isActive: boolean("is_active").default(true),
   // Add missing fields that are in edit dialog

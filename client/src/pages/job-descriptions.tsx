@@ -59,8 +59,6 @@ export default function JobDescriptions() {
     skills: "",
     experienceLevel: "",
     location: "",
-    salaryMin: 0,
-    salaryMax: 0,
     notes: "",
     isActive: true,
     // Add missing fields that are in edit dialog
@@ -104,8 +102,7 @@ export default function JobDescriptions() {
         experienceLevel: data.experienceLevel || undefined,
         location: data.location || undefined,
         notes: data.notes || undefined,
-        salaryMin: data.salaryMin > 0 ? data.salaryMin : undefined,
-        salaryMax: data.salaryMax > 0 ? data.salaryMax : undefined,
+
         department: data.department || undefined,
         employmentType: data.employmentType || undefined,
         salaryRange: data.salaryRange || undefined,
@@ -228,8 +225,6 @@ export default function JobDescriptions() {
       skills: "",
       experienceLevel: "",
       location: "",
-      salaryMin: 0,
-      salaryMax: 0,
       notes: "",
       isActive: true,
       department: "",
@@ -264,8 +259,6 @@ export default function JobDescriptions() {
       skills: job.skills,
       experienceLevel: job.experienceLevel || "",
       location: job.location || "",
-      salaryMin: job.salaryMin || 0,
-      salaryMax: job.salaryMax || 0,
       notes: job.notes || "",
       isActive: job.isActive !== false,
       department: job.department || "",
@@ -449,26 +442,7 @@ export default function JobDescriptions() {
                         className="mt-2"
                       />
                     </div>
-                    <div>
-                      <Label className="text-sm">Salary Min</Label>
-                      <Input
-                        type="number"
-                        placeholder="80000"
-                        value={jobForm.salaryMin || ''}
-                        onChange={(e) => setJobForm({ ...jobForm, salaryMin: parseInt(e.target.value) || 0 })}
-                        className="mt-2"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm">Salary Max</Label>
-                      <Input
-                        type="number"
-                        placeholder="120000"
-                        value={jobForm.salaryMax || ''}
-                        onChange={(e) => setJobForm({ ...jobForm, salaryMax: parseInt(e.target.value) || 0 })}
-                        className="mt-2"
-                      />
-                    </div>
+
                   </div>
                   <div>
                     <Label className="text-sm">Skills *</Label>

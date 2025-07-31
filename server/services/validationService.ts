@@ -47,8 +47,6 @@ export const jobDescriptionValidationSchema = z.object({
   skills: z.string().min(2, 'Skills must be specified'),
   experienceLevel: z.string().optional(),
   location: z.string().optional(),
-  salaryMin: z.number().min(0).optional(),
-  salaryMax: z.number().min(0).optional(),
   notes: z.string().optional(),
   isActive: z.boolean().optional().default(true),
   // Add missing fields that are in edit dialog
