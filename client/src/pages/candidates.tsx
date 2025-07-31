@@ -69,6 +69,7 @@ export default function Candidates() {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [deletingCandidateId, setDeletingCandidateId] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -291,6 +292,86 @@ export default function Candidates() {
     });
   };
 
+  // Export candidates to CSV
+  const exportCandidates = async () => {
+    if (!filteredCandidates || filteredCandidates.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No candidates available to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsExporting(true);
+    
+    try {
+      // Prepare CSV data with comprehensive candidate information
+      const csvData = filteredCandidates.map(candidate => ({
+        "Full Name": candidate.fullName || "",
+        "Email": candidate.email || "",
+        "Phone": candidate.phone || "",
+        "Position Applied": candidate.position || "",
+        "LinkedIn Profile": candidate.linkedinProfile || "",
+        "Status": candidate.status || "",
+        "Applied Date": candidate.appliedAt ? new Date(candidate.appliedAt).toLocaleDateString() : "",
+        "Last Updated": candidate.updatedAt ? new Date(candidate.updatedAt).toLocaleDateString() : "",
+        "CV File Name": candidate.cvFileName || "",
+        "Overall Score": candidate.assessment?.overallScore || "Not Assessed",
+        "Technical Skills": candidate.assessment?.technicalSkills || "",
+        "Experience Match": candidate.assessment?.experienceMatch || "",
+        "Education": candidate.assessment?.education || "",
+        "AI Insights": candidate.assessment?.aiInsights || "",
+        "Assessment Status": candidate.assessment?.status || "Pending",
+        "Processed Date": candidate.assessment?.processedAt ? new Date(candidate.assessment.processedAt).toLocaleDateString() : "",
+        "Resume Summary": candidate.resumeSummary || ""
+      }));
+
+      // Create CSV header
+      const headers = Object.keys(csvData[0]);
+      
+      // Convert data to CSV format
+      const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => 
+          headers.map(header => {
+            const value = row[header as keyof typeof row];
+            // Escape quotes and wrap in quotes if contains comma, newline, or quote
+            if (typeof value === 'string' && (value.includes(',') || value.includes('\n') || value.includes('"'))) {
+              return `"${value.replace(/"/g, '""')}"`;
+            }
+            return value;
+          }).join(',')
+        )
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `candidates-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Export Successful",
+        description: `${filteredCandidates.length} candidates exported to CSV file`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export candidates data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Filter candidates based on search and filters
   const filteredCandidates = candidates?.filter(candidate => {
     const matchesSearch = candidate.fullName.toLowerCase().includes(search.toLowerCase()) ||
@@ -333,8 +414,18 @@ export default function Candidates() {
               </p>
             </div>
             <div className="flex items-center space-x-2">
-              <Button size="sm" variant="outline" className="text-xs sm:text-sm">
-                <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="text-xs sm:text-sm"
+                onClick={exportCandidates}
+                disabled={isExporting || !filteredCandidates || filteredCandidates.length === 0}
+              >
+                {isExporting ? (
+                  <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 animate-spin" />
+                ) : (
+                  <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                )}
                 Export
               </Button>
             </div>
