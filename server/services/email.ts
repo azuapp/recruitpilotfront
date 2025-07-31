@@ -2,14 +2,14 @@ import nodemailer from 'nodemailer';
 
 // Debug environment variables
 console.log('SMTP Configuration:', {
-  host: process.env.SMTP_HOST,
+  host: 'smtp.gmail.com', // Fixed host
   port: process.env.SMTP_PORT,
   user: process.env.SMTP_USER,
   passExists: !!process.env.SMTP_PASS
 });
 
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  host: 'smtp.gmail.com', // Force correct SMTP host
   port: parseInt(process.env.SMTP_PORT || '587'),
   secure: false,
   requireTLS: true,
