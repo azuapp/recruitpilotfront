@@ -221,9 +221,12 @@ export default function Assessments() {
                       <p className="text-xs sm:text-sm text-gray-500">Avg Score</p>
                       <p className="text-lg sm:text-xl font-bold">
                         {(() => {
-                          const validScores = assessments.filter(a => a.overallScore != null && !isNaN(a.overallScore));
+                          const validScores = assessments.filter(a => {
+                            const score = parseFloat(a.overallScore);
+                            return a.overallScore != null && !isNaN(score);
+                          });
                           if (validScores.length === 0) return "N/A";
-                          const average = validScores.reduce((acc, a) => acc + a.overallScore, 0) / validScores.length;
+                          const average = validScores.reduce((acc, a) => acc + parseFloat(a.overallScore), 0) / validScores.length;
                           return Math.round(average) + "%";
                         })()}
                       </p>
@@ -241,7 +244,10 @@ export default function Assessments() {
                     <div>
                       <p className="text-xs sm:text-sm text-gray-500">High Scores</p>
                       <p className="text-lg sm:text-xl font-bold">
-                        {assessments.filter(a => a.overallScore != null && !isNaN(a.overallScore) && a.overallScore >= 80).length}
+                        {assessments.filter(a => {
+                          const score = parseFloat(a.overallScore);
+                          return a.overallScore != null && !isNaN(score) && score >= 80;
+                        }).length}
                       </p>
                     </div>
                   </div>
@@ -318,14 +324,20 @@ export default function Assessments() {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-gray-700">Overall Score</span>
-                            <span className={cn("text-lg font-bold", getScoreColor(assessment.overallScore || 0))}>
-                              {assessment.overallScore != null && !isNaN(assessment.overallScore) ? `${assessment.overallScore}%` : 'N/A'}
+                            <span className={cn("text-lg font-bold", getScoreColor(parseFloat(assessment.overallScore) || 0))}>
+                              {(() => {
+                                const score = parseFloat(assessment.overallScore);
+                                return assessment.overallScore != null && !isNaN(score) ? `${Math.round(score)}%` : 'N/A';
+                              })()}
                             </span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div 
-                              className={cn("h-2 rounded-full transition-all", getScoreBackground(assessment.overallScore || 0))}
-                              style={{ width: `${assessment.overallScore != null && !isNaN(assessment.overallScore) ? assessment.overallScore : 0}%` }}
+                              className={cn("h-2 rounded-full transition-all", getScoreBackground(parseFloat(assessment.overallScore) || 0))}
+                              style={{ width: `${(() => {
+                                const score = parseFloat(assessment.overallScore);
+                                return assessment.overallScore != null && !isNaN(score) ? score : 0;
+                              })()}%` }}
                             />
                           </div>
                         </div>
