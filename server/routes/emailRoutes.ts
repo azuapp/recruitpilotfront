@@ -18,15 +18,15 @@ router.get('/emails', requireAuth, asyncHandler(async (req: Request, res: Respon
 
 // Send email
 router.post('/emails/send', requireAuth, asyncHandler(async (req: Request, res: Response) => {
-  const validatedData = ValidationService.validate(emailValidationSchema, req.body);
-  
-  logger.info('Sending email', { 
-    candidateId: validatedData.candidateId,
-    recipientEmail: validatedData.recipientEmail,
-    subject: validatedData.subject
-  });
-  
   try {
+    const validatedData = ValidationService.validate(emailValidationSchema, req.body);
+    
+    logger.info('Sending email', { 
+      candidateId: validatedData.candidateId,
+      recipientEmail: validatedData.recipientEmail,
+      subject: validatedData.subject
+    });
+    
     // Send email
     const emailResult = await sendEmail({
       to: validatedData.recipientEmail,
@@ -54,23 +54,33 @@ router.post('/emails/send', requireAuth, asyncHandler(async (req: Request, res: 
       emailId: emailRecord.id,
       success: emailResult
     });
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Failed to send email', { 
-      candidateId: validatedData.candidateId,
-      error 
+      error: error.message,
+      stack: error.stack,
+      requestBody: req.body
     });
     
-    // Log failed email attempt
-    await storage.createEmail({
-      candidateId: validatedData.candidateId,
-      subject: validatedData.subject,
-      content: validatedData.content,
-      emailType: 'follow-up',
-      status: 'failed',
-      sentAt: new Date(),
-    });
+    // Try to log failed email attempt if validation succeeded
+    try {
+      if (req.body.candidateId) {
+        await storage.createEmail({
+          candidateId: req.body.candidateId,
+          subject: req.body.subject || 'Email Failed',
+          content: req.body.content || 'Failed to send email',
+          emailType: 'follow-up',
+          status: 'failed',
+          sentAt: new Date(),
+        });
+      }
+    } catch (logError) {
+      logger.error('Failed to log email failure', { error: logError });
+    }
     
-    throw new Error('Failed to send email');
+    res.status(500).json({ 
+      message: 'Failed to send email',
+      error: error.message 
+    });
   }
 }));
 

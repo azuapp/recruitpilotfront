@@ -154,11 +154,12 @@ export default function Candidates() {
   });
 
   const sendEmailMutation = useMutation({
-    mutationFn: async ({ candidateId, subject, message }: { candidateId: string; subject: string; message: string }) => {
+    mutationFn: async ({ candidateId, subject, message, recipientEmail }: { candidateId: string; subject: string; message: string; recipientEmail: string }) => {
       const response = await apiRequest("POST", "/api/emails/send", {
         candidateId,
         subject,
-        message,
+        content: message, // Backend expects 'content', not 'message'
+        recipientEmail,
       });
       return response.json();
     },
@@ -286,6 +287,7 @@ export default function Candidates() {
       candidateId: selectedCandidate.id,
       subject: emailSubject,
       message: emailMessage,
+      recipientEmail: selectedCandidate.email,
     });
   };
 

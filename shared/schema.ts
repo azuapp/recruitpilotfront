@@ -193,7 +193,6 @@ export const insertInterviewSchema = createInsertSchema(interviews).omit({
 
 export const insertEmailSchema = createInsertSchema(emailHistory).omit({
   id: true,
-  sentAt: true,
   createdAt: true,
 });
 
