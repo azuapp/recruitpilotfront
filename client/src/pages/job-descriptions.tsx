@@ -578,11 +578,11 @@ export default function JobDescriptions() {
                               {job.title}
                             </h3>
                             <p className="text-xs sm:text-sm text-gray-500 truncate">
-                              {job.department}
+                              {job.department || job.position}
                             </p>
                           </div>
                           <div className="flex-shrink-0">
-                            {getStatusBadge(job.status)}
+                            {getStatusBadge(job.status || 'active')}
                           </div>
                         </div>
 
@@ -616,9 +616,9 @@ export default function JobDescriptions() {
                             "text-xs sm:text-sm text-gray-600",
                             !isExpanded && "line-clamp-2"
                           )}>
-                            {job.description}
+                            {job.description || 'No description available'}
                           </div>
-                          {job.description.length > 150 && (
+                          {job.description && job.description.length > 150 && (
                             <Button
                               variant="ghost"
                               size="sm"
