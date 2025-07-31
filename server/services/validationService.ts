@@ -51,6 +51,11 @@ export const jobDescriptionValidationSchema = z.object({
   salaryMax: z.number().min(0).optional(),
   notes: z.string().optional(),
   isActive: z.boolean().optional().default(true),
+  // Add missing fields that are in edit dialog
+  department: z.string().optional(),
+  employmentType: z.string().optional(),
+  salaryRange: z.string().optional(),
+  status: z.string().optional().default("active"),
 });
 
 export class ValidationService {

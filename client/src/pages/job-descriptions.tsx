@@ -62,7 +62,12 @@ export default function JobDescriptions() {
     salaryMin: 0,
     salaryMax: 0,
     notes: "",
-    isActive: true
+    isActive: true,
+    // Add missing fields that are in edit dialog
+    department: "",
+    employmentType: "",
+    salaryRange: "",
+    status: "active"
   });
 
   // Redirect if not authenticated
@@ -101,6 +106,10 @@ export default function JobDescriptions() {
         notes: data.notes || undefined,
         salaryMin: data.salaryMin > 0 ? data.salaryMin : undefined,
         salaryMax: data.salaryMax > 0 ? data.salaryMax : undefined,
+        department: data.department || undefined,
+        employmentType: data.employmentType || undefined,
+        salaryRange: data.salaryRange || undefined,
+        status: data.status || "active",
       };
       console.log('Sending cleaned job data:', cleanData);
       const res = await apiRequest("POST", "/api/job-descriptions", cleanData);
@@ -222,7 +231,11 @@ export default function JobDescriptions() {
       salaryMin: 0,
       salaryMax: 0,
       notes: "",
-      isActive: true
+      isActive: true,
+      department: "",
+      employmentType: "",
+      salaryRange: "",
+      status: "active"
     });
   };
 
@@ -254,7 +267,11 @@ export default function JobDescriptions() {
       salaryMin: job.salaryMin || 0,
       salaryMax: job.salaryMax || 0,
       notes: job.notes || "",
-      isActive: job.isActive !== false
+      isActive: job.isActive !== false,
+      department: job.department || "",
+      employmentType: job.employmentType || "",
+      salaryRange: job.salaryRange || "",
+      status: job.status || "active"
     });
     setIsEditDialogOpen(true);
   };
@@ -371,6 +388,30 @@ export default function JobDescriptions() {
                       />
                     </div>
                     <div>
+                      <Label className="text-sm">Department</Label>
+                      <Input
+                        placeholder="e.g. Engineering"
+                        value={jobForm.department}
+                        onChange={(e) => setJobForm({ ...jobForm, department: e.target.value })}
+                        className="mt-2"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm">Employment Type</Label>
+                      <Select value={jobForm.employmentType} onValueChange={(value) => setJobForm({ ...jobForm, employmentType: value })}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue placeholder="Select employment type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="full-time">Full-time</SelectItem>
+                          <SelectItem value="part-time">Part-time</SelectItem>
+                          <SelectItem value="contract">Contract</SelectItem>
+                          <SelectItem value="freelance">Freelance</SelectItem>
+                          <SelectItem value="internship">Internship</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
                       <Label className="text-sm">Experience Level</Label>
                       <Select value={jobForm.experienceLevel} onValueChange={(value) => setJobForm({ ...jobForm, experienceLevel: value })}>
                         <SelectTrigger className="mt-2">
@@ -384,6 +425,29 @@ export default function JobDescriptions() {
                           <SelectItem value="Executive">Executive</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div>
+                      <Label className="text-sm">Status</Label>
+                      <Select value={jobForm.status} onValueChange={(value) => setJobForm({ ...jobForm, status: value })}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                          <SelectItem value="draft">Draft</SelectItem>
+                          <SelectItem value="closed">Closed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-sm">Salary Range</Label>
+                      <Input
+                        placeholder="e.g. $80,000 - $120,000"
+                        value={jobForm.salaryRange}
+                        onChange={(e) => setJobForm({ ...jobForm, salaryRange: e.target.value })}
+                        className="mt-2"
+                      />
                     </div>
                     <div>
                       <Label className="text-sm">Salary Min</Label>

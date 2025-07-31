@@ -111,6 +111,11 @@ export const jobDescriptions = pgTable("job_descriptions", {
   salaryMax: integer("salary_max"),
   notes: text("notes"),
   isActive: boolean("is_active").default(true),
+  // Add missing fields that are in edit dialog
+  department: varchar("department"),
+  employmentType: varchar("employment_type"),
+  salaryRange: varchar("salary_range"),
+  status: varchar("status").default("active"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
