@@ -30,14 +30,22 @@ import { cn } from "@/lib/utils";
 interface Evaluation {
   id: string;
   candidateId: string;
+  candidateName: string;
+  position: string;
+  fitScore: number;
   overallScore: number;
-  technicalSkills: number;
+  matchingSkills: string[];
+  missingSkills: string[];
+  technicalSkills?: number;
   experienceMatch: number;
-  education: number;
-  communicationSkills: number;
-  culturalFit: number;
-  recommendations: string;
-  evaluatedAt: string;
+  educationMatch: number;
+  education?: number;
+  communicationSkills?: number;
+  culturalFit?: number;
+  overallRecommendation: string;
+  recommendations?: string;
+  ranking: number;
+  evaluatedAt?: string;
   evaluator?: string;
 }
 
@@ -142,10 +150,10 @@ export default function Evaluations() {
     const matchesPosition = positionFilter === "all" || candidate.position === positionFilter;
     
     let matchesScore = true;
-    if (scoreFilter === "excellent" && evaluation.overallScore < 90) matchesScore = false;
-    if (scoreFilter === "good" && (evaluation.overallScore < 70 || evaluation.overallScore >= 90)) matchesScore = false;
-    if (scoreFilter === "average" && (evaluation.overallScore < 50 || evaluation.overallScore >= 70)) matchesScore = false;
-    if (scoreFilter === "poor" && evaluation.overallScore >= 50) matchesScore = false;
+    if (scoreFilter === "excellent" && evaluation.fitScore < 90) matchesScore = false;
+    if (scoreFilter === "good" && (evaluation.fitScore < 70 || evaluation.fitScore >= 90)) matchesScore = false;
+    if (scoreFilter === "average" && (evaluation.fitScore < 50 || evaluation.fitScore >= 70)) matchesScore = false;
+    if (scoreFilter === "poor" && evaluation.fitScore >= 50) matchesScore = false;
     
     return matchesSearch && matchesPosition && matchesScore;
   }) || [];
@@ -196,10 +204,10 @@ export default function Evaluations() {
   const stats = {
     total: filteredEvaluations.length,
     avgScore: filteredEvaluations.length > 0 
-      ? Math.round(filteredEvaluations.reduce((acc, e) => acc + e.overallScore, 0) / filteredEvaluations.length)
+      ? Math.round(filteredEvaluations.reduce((acc, e) => acc + e.fitScore, 0) / filteredEvaluations.length)
       : 0,
-    excellent: filteredEvaluations.filter(e => e.overallScore >= 90).length,
-    recommended: filteredEvaluations.filter(e => e.recommendations.toLowerCase().includes('recommend')).length
+    excellent: filteredEvaluations.filter(e => e.fitScore >= 90).length,
+    recommended: filteredEvaluations.filter(e => e.overallRecommendation?.toLowerCase().includes('recommend')).length
   };
 
   if (isLoading) {
@@ -419,8 +427,8 @@ export default function Evaluations() {
             <div className="space-y-3 sm:space-y-4">
               {filteredEvaluations.map((evaluation) => {
                 const candidate = candidates?.find(c => c.id === evaluation.candidateId);
-                const isExpanded = expandedEvaluations.has(evaluation.id);
-                const scoreBadge = getScoreBadge(evaluation.overallScore);
+                const isExpanded = expandedEvaluations.has(evaluation.candidateId);
+                const scoreBadge = getScoreBadge(evaluation.fitScore);
                 
                 return (
                   <Card key={evaluation.id} className="hover:shadow-md transition-shadow">
@@ -454,14 +462,14 @@ export default function Evaluations() {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-gray-700">Overall Score</span>
-                            <span className={cn("text-lg font-bold", getScoreColor(evaluation.overallScore))}>
-                              {evaluation.overallScore}%
+                            <span className={cn("text-lg font-bold", getScoreColor(evaluation.fitScore))}>
+                              {evaluation.fitScore}%
                             </span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div 
-                              className={cn("h-2 rounded-full transition-all", getScoreBackground(evaluation.overallScore))}
-                              style={{ width: `${evaluation.overallScore}%` }}
+                              className={cn("h-2 rounded-full transition-all", getScoreBackground(evaluation.fitScore))}
+                              style={{ width: `${evaluation.fitScore}%` }}
                             />
                           </div>
                         </div>
@@ -469,29 +477,21 @@ export default function Evaluations() {
                         {/* Skills Breakdown */}
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs sm:text-sm">
                           <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                            <span className="text-gray-600">Technical</span>
-                            <span className="font-medium">{evaluation.technicalSkills}%</span>
-                          </div>
-                          <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
                             <span className="text-gray-600">Experience</span>
                             <span className="font-medium">{evaluation.experienceMatch}%</span>
                           </div>
                           <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
                             <span className="text-gray-600">Education</span>
-                            <span className="font-medium">{evaluation.education}%</span>
+                            <span className="font-medium">{evaluation.educationMatch}%</span>
                           </div>
                           <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                            <span className="text-gray-600">Communication</span>
-                            <span className="font-medium">{evaluation.communicationSkills}%</span>
-                          </div>
-                          <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                            <span className="text-gray-600">Cultural Fit</span>
-                            <span className="font-medium">{evaluation.culturalFit}%</span>
+                            <span className="text-gray-600">Ranking</span>
+                            <span className="font-medium">#{evaluation.ranking}</span>
                           </div>
                         </div>
 
                         {/* Recommendations */}
-                        {evaluation.recommendations && (
+                        {evaluation.overallRecommendation && (
                           <div className="border-t border-gray-100 pt-3">
                             <div className="flex items-center space-x-2 mb-2">
                               <Award className="w-4 h-4 text-purple-500" />
@@ -501,13 +501,13 @@ export default function Evaluations() {
                               "text-xs sm:text-sm text-gray-600 bg-purple-50 p-2 rounded",
                               !isExpanded && "line-clamp-2"
                             )}>
-                              {evaluation.recommendations}
+                              {evaluation.overallRecommendation}
                             </div>
-                            {evaluation.recommendations.length > 150 && (
+                            {evaluation.overallRecommendation && evaluation.overallRecommendation.length > 150 && (
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => toggleEvaluationExpansion(evaluation.id)}
+                                onClick={() => toggleEvaluationExpansion(evaluation.candidateId)}
                                 className="mt-2 h-6 text-xs text-purple-600 hover:text-purple-700 p-0"
                               >
                                 {isExpanded ? 'Show less' : 'Show more'}
@@ -516,19 +516,22 @@ export default function Evaluations() {
                           </div>
                         )}
 
-                        {/* Evaluation Date and Evaluator */}
-                        <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
-                          <div className="flex items-center space-x-2">
-                            <Calendar className="w-3 h-3" />
-                            <span>Evaluated: {new Date(evaluation.evaluatedAt).toLocaleDateString()}</span>
-                          </div>
-                          {evaluation.evaluator && (
-                            <div className="flex items-center space-x-2">
-                              <User className="w-3 h-3" />
-                              <span>By: {evaluation.evaluator}</span>
+                        {/* Skills Details */}
+                        {evaluation.matchingSkills && evaluation.matchingSkills.length > 0 && (
+                          <div className="border-t border-gray-100 pt-3">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <Star className="w-4 h-4 text-green-500" />
+                              <span className="text-sm font-medium text-gray-700">Matching Skills</span>
                             </div>
-                          )}
-                        </div>
+                            <div className="flex flex-wrap gap-1">
+                              {evaluation.matchingSkills.map((skill, index) => (
+                                <Badge key={index} variant="secondary" className="text-xs">
+                                  {skill}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
