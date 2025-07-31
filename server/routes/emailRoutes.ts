@@ -37,9 +37,9 @@ router.post('/emails/send', requireAuth, asyncHandler(async (req: Request, res: 
     // Log email in database
     const emailRecord = await storage.createEmail({
       candidateId: validatedData.candidateId,
-      recipientEmail: validatedData.recipientEmail,
       subject: validatedData.subject,
       content: validatedData.content,
+      emailType: 'follow-up',
       status: 'sent',
       sentAt: new Date(),
     });
@@ -63,9 +63,9 @@ router.post('/emails/send', requireAuth, asyncHandler(async (req: Request, res: 
     // Log failed email attempt
     await storage.createEmail({
       candidateId: validatedData.candidateId,
-      recipientEmail: validatedData.recipientEmail,
       subject: validatedData.subject,
       content: validatedData.content,
+      emailType: 'follow-up',
       status: 'failed',
       sentAt: new Date(),
     });

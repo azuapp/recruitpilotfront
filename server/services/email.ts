@@ -28,19 +28,19 @@ export interface EmailOptions {
   text?: string;
 }
 
-export async function sendEmail(options: EmailOptions): Promise<boolean> {
+export async function sendEmail(options: EmailOptions): Promise<{messageId: string}> {
   try {
-    await transporter.sendMail({
+    const result = await transporter.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: options.to,
       subject: options.subject,
       html: options.html,
       text: options.text,
     });
-    return true;
+    return { messageId: result.messageId || 'unknown' };
   } catch (error) {
     console.error('Error sending email:', error);
-    return false;
+    throw error; // Re-throw the error instead of returning false
   }
 }
 
