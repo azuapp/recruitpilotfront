@@ -57,6 +57,7 @@ export default function Evaluations() {
   const [positionFilter, setPositionFilter] = useState("all");
   const [scoreFilter, setScoreFilter] = useState("all");
   const [expandedEvaluations, setExpandedEvaluations] = useState<Set<string>>(new Set());
+  const [selectedPosition, setSelectedPosition] = useState("all");
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -81,6 +82,53 @@ export default function Evaluations() {
     queryKey: ["/api/candidates"],
     retry: false,
   });
+
+  // Run evaluation mutation
+  const runEvaluationMutation = useMutation({
+    mutationFn: async (position: string) => {
+      const res = await apiRequest("POST", "/api/evaluations/run", { 
+        position: position === "all" ? undefined : position 
+      });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Evaluation Complete",
+        description: `Successfully evaluated ${data.count || 0} candidates`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/evaluations"] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/auth";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Evaluation Failed",
+        description: error.message || "Failed to run candidate evaluation",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleRunEvaluation = () => {
+    if (!candidates || candidates.length === 0) {
+      toast({
+        title: "No Candidates",
+        description: "No candidates available for evaluation",
+        variant: "destructive",
+      });
+      return;
+    }
+    runEvaluationMutation.mutate(selectedPosition);
+  };
 
   // Filter evaluations based on search and filters
   const filteredEvaluations = evaluations?.filter(evaluation => {
@@ -180,6 +228,38 @@ export default function Evaluations() {
               <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
                 Comprehensive candidate evaluation results and insights
               </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Select value={selectedPosition} onValueChange={setSelectedPosition}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Select position" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Positions</SelectItem>
+                  {uniquePositions.map(position => (
+                    <SelectItem key={position} value={position}>
+                      {position.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button 
+                onClick={handleRunEvaluation}
+                disabled={runEvaluationMutation.isPending || !candidates || candidates.length === 0}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {runEvaluationMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Evaluating...
+                  </>
+                ) : (
+                  <>
+                    <Target className="w-4 h-4 mr-2" />
+                    Run Evaluation
+                  </>
+                )}
+              </Button>
             </div>
           </div>
 
@@ -312,8 +392,27 @@ export default function Evaluations() {
                 <p className="text-sm sm:text-base text-gray-500 mb-4">
                   {search || positionFilter !== "all" || scoreFilter !== "all"
                     ? "Try adjusting your search filters to see more evaluations."
-                    : "Evaluations will appear here once candidates have been thoroughly assessed."}
+                    : "Click 'Run Evaluation' to analyze and score candidates based on their skills and experience."}
                 </p>
+                {(!evaluations || evaluations.length === 0) && candidates && candidates.length > 0 && (
+                  <Button 
+                    onClick={handleRunEvaluation}
+                    disabled={runEvaluationMutation.isPending}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {runEvaluationMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Evaluating...
+                      </>
+                    ) : (
+                      <>
+                        <Target className="w-4 h-4 mr-2" />
+                        Run Your First Evaluation
+                      </>
+                    )}
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ) : (
