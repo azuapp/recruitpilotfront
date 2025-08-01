@@ -165,7 +165,6 @@ const translations = {
     candidatesEvaluated: "candidates evaluated for",
     evaluationFailed: "Evaluation Failed",
     failedToRunEvaluation: "Failed to run evaluation",
-    evaluationResults: "Evaluation Results",
     loadingEvaluations: "Loading evaluations...",
     noEvaluationsFound: "No evaluations found",
     evaluationsWillAppear: "Evaluations will appear here once you run position-specific analysis.",
@@ -203,7 +202,6 @@ const translations = {
     personalInformation: "Personal Information",
     applicationDetails: "Application Details",
     assessmentResults: "Assessment Results",
-    aiInsights: "AI Insights",
     sentAt: "Sent At",
     
     // Status values
@@ -212,13 +210,10 @@ const translations = {
     interview: "Interview",
     hired: "Hired",
     rejected: "Rejected",
-    completed: "Completed",
     cancelled: "Cancelled",
     rescheduled: "Rescheduled",
     sent: "Sent",
     delivered: "Delivered",
-    pending: "Pending",
-    failed: "Failed",
     scheduled: "Scheduled",
     
     // Assessment actions
