@@ -12,8 +12,39 @@ const router = Router();
 router.get('/emails', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { candidateId } = req.query;
   
-  const emails = await storage.getEmails(candidateId as string);
-  res.json(emails);
+  try {
+    const emails = await storage.getEmails(candidateId as string);
+    logger.info('Fetched emails', { count: emails.length, candidateId });
+    res.json(emails);
+  } catch (error: any) {
+    logger.error('Failed to fetch emails', { error: error.message });
+    res.status(500).json({ message: 'Failed to fetch emails', error: error.message });
+  }
+}));
+
+// Test endpoint to create sample email (remove this in production)
+router.post('/emails/test', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  try {
+    // Get first candidate to associate with test email
+    const candidates = await storage.getCandidates();
+    if (candidates.length === 0) {
+      return res.status(400).json({ message: 'No candidates found. Create a candidate first.' });
+    }
+    
+    const sampleEmail = await storage.createEmail({
+      candidateId: candidates[0].id,
+      subject: 'Test Email - Welcome to RecruitPilot',
+      content: '<h2>Welcome!</h2><p>This is a test email to verify the email system is working correctly.</p><p>Thank you for your application!</p>',
+      emailType: 'follow-up',
+      status: 'sent',
+      sentAt: new Date(),
+    });
+    
+    res.json({ message: 'Test email created successfully', email: sampleEmail });
+  } catch (error: any) {
+    logger.error('Failed to create test email', { error: error.message });
+    res.status(500).json({ message: 'Failed to create test email', error: error.message });
+  }
 }));
 
 // Send email

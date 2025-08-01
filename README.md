@@ -1,13 +1,24 @@
-# RecruitPro - AI-Powered Recruitment Platform
+# RecruitPilot - Enterprise Recruitment Platform
 
-A comprehensive recruitment automation system that streamlines the hiring process through intelligent resume analysis, automated assessments, and candidate management.
+A modern, secure recruitment management platform built with React, Express.js, and PostgreSQL. Features AI-powered assessments, comprehensive security, and enterprise-grade architecture.
 
 ## 🚀 Features
 
 ### Core Functionality
-- **Public Application Form**: Candidates can submit applications with CV uploads
-- **AI Resume Analysis**: Automated resume parsing and scoring using OpenAI GPT-4o
-- **Admin Dashboard**: Complete candidate management interface
+- **Candidate Management**: Complete application tracking and management system
+- **AI-Powered Assessments**: Automated resume analysis and candidate evaluation using OpenAI GPT-4o
+- **Interview Scheduling**: Integrated calendar and interview management
+- **Email Communications**: Automated notifications and updates
+- **Job Management**: Create and manage job descriptions and requirements
+- **Dashboard Analytics**: Real-time metrics and reporting
+
+### 🛡️ Enterprise Security
+- **Input Validation & Sanitization**: Comprehensive XSS and SQL injection prevention
+- **Rate Limiting**: DoS protection (100 req/15min general, 5 req/15min auth)
+- **Security Headers**: Helmet.js with CSP, HSTS, and frame protection
+- **CORS Protection**: Configured for specific origins with credentials support
+- **File Upload Security**: PDF-only validation with size limits (10MB max)
+- **Authentication Security**: Bcrypt password hashing with secure session management
 - **Email Automation**: Confirmation emails and communication tracking
 - **Interview Scheduling**: Built-in interview management system
 - **User Management**: Role-based access control for administrators

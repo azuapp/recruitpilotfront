@@ -1,29 +1,63 @@
 import express, { type Request, Response, NextFunction } from "express";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import cors from "cors";
 import { registerRoutes } from "./routes/index";
 import { setupVite, serveStatic, log } from "./vite";
 import config from "./config/environment";
 import { logger } from "./services/logger";
+import { securityHeaders, rateLimitConfig, authRateLimitConfig, requestSizeLimits } from "./services/security";
 
 const app = express();
 
-// CORS Configuration
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
-  // Handle preflight OPTIONS requests
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-    return;
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      fontSrc: ["'self'"],
+      connectSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
   }
-  
-  next();
-});
+}));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Rate limiting
+const generalLimiter = rateLimit(rateLimitConfig);
+const authLimiter = rateLimit(authRateLimitConfig);
+
+app.use('/api/', generalLimiter);
+app.use('/api/auth/', authLimiter);
+app.use('/api/login', authLimiter);
+app.use('/api/register', authLimiter);
+
+// CORS Configuration
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://yourdomain.com'] // Add your production domain
+    : ['http://localhost:5173', 'http://localhost:5001'],
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
+};
+
+app.use(cors(corsOptions));
+
+// Body parsing with size limits
+app.use(express.json(requestSizeLimits.json));
+app.use(express.urlencoded(requestSizeLimits.urlencoded));
+
+// Custom security headers
+app.use(securityHeaders);
 
 app.use((req, res, next) => {
   const start = Date.now();

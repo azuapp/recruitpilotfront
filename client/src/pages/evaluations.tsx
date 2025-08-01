@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
   Brain, 
   TrendingUp, 
@@ -56,6 +57,19 @@ interface Candidate {
   position: string;
 }
 
+interface JobDescription {
+  id: string;
+  title?: string;
+  position: string;
+  description?: string;
+  responsibilities?: string;
+  requirements?: string;
+  requiredExperience?: string;
+  skills: string;
+  experienceLevel?: string;
+  isActive?: boolean;
+}
+
 export default function Evaluations() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
@@ -66,6 +80,8 @@ export default function Evaluations() {
   const [scoreFilter, setScoreFilter] = useState("all");
   const [expandedEvaluations, setExpandedEvaluations] = useState<Set<string>>(new Set());
   const [selectedPosition, setSelectedPosition] = useState("all");
+  const [isJobSelectionDialogOpen, setIsJobSelectionDialogOpen] = useState(false);
+  const [selectedJobDescription, setSelectedJobDescription] = useState<JobDescription | null>(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -83,20 +99,26 @@ export default function Evaluations() {
 
   const { data: evaluations, isLoading: evaluationsLoading } = useQuery<Evaluation[]>({
     queryKey: ["/api/evaluations"],
+    queryFn: () => fetch("/api/evaluations").then(res => res.json()),
     retry: false,
   });
 
   const { data: candidates } = useQuery<Candidate[]>({
     queryKey: ["/api/candidates"],
+    queryFn: () => fetch("/api/candidates").then(res => res.json()),
+    retry: false,
+  });
+
+  const { data: jobDescriptions } = useQuery<JobDescription[]>({
+    queryKey: ["/api/job-descriptions"],
+    queryFn: () => fetch("/api/job-descriptions").then(res => res.json()),
     retry: false,
   });
 
   // Run evaluation mutation
   const runEvaluationMutation = useMutation({
-    mutationFn: async (position: string) => {
-      const res = await apiRequest("POST", "/api/evaluations/run", { 
-        position: position === "all" ? undefined : position 
-      });
+    mutationFn: async (data: { position?: string; jobDescriptionId?: string }) => {
+      const res = await apiRequest("POST", "/api/evaluations/run", data);
       return await res.json();
     },
     onSuccess: (data) => {
@@ -105,6 +127,8 @@ export default function Evaluations() {
         description: `Successfully evaluated ${data.count || 0} candidates`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/evaluations"] });
+      setIsJobSelectionDialogOpen(false);
+      setSelectedJobDescription(null);
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -135,7 +159,37 @@ export default function Evaluations() {
       });
       return;
     }
-    runEvaluationMutation.mutate(selectedPosition);
+
+    // Check if there are job descriptions available
+    if (!jobDescriptions || jobDescriptions.length === 0) {
+      toast({
+        title: "No Job Descriptions",
+        description: "Please create job descriptions first before running evaluations.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Open job selection dialog
+    setIsJobSelectionDialogOpen(true);
+  };
+
+  const handleJobSelectionAndRunEvaluation = () => {
+    if (!selectedJobDescription) {
+      toast({
+        title: "No Job Selected",
+        description: "Please select a job description to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const evaluationData = {
+      position: selectedPosition === "all" ? undefined : selectedPosition,
+      jobDescriptionId: selectedJobDescription.id
+    };
+
+    runEvaluationMutation.mutate(evaluationData);
   };
 
   // Filter evaluations based on search and filters
@@ -150,10 +204,10 @@ export default function Evaluations() {
     const matchesPosition = positionFilter === "all" || candidate.position === positionFilter;
     
     let matchesScore = true;
-    if (scoreFilter === "excellent" && evaluation.fitScore < 90) matchesScore = false;
-    if (scoreFilter === "good" && (evaluation.fitScore < 70 || evaluation.fitScore >= 90)) matchesScore = false;
-    if (scoreFilter === "average" && (evaluation.fitScore < 50 || evaluation.fitScore >= 70)) matchesScore = false;
-    if (scoreFilter === "poor" && evaluation.fitScore >= 50) matchesScore = false;
+    if (scoreFilter === "excellent" && (evaluation.fitScore || 0) < 90) matchesScore = false;
+    if (scoreFilter === "good" && ((evaluation.fitScore || 0) < 70 || (evaluation.fitScore || 0) >= 90)) matchesScore = false;
+    if (scoreFilter === "average" && ((evaluation.fitScore || 0) < 50 || (evaluation.fitScore || 0) >= 70)) matchesScore = false;
+    if (scoreFilter === "poor" && (evaluation.fitScore || 0) >= 50) matchesScore = false;
     
     return matchesSearch && matchesPosition && matchesScore;
   }) || [];
@@ -171,23 +225,26 @@ export default function Evaluations() {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return "text-green-600";
-    if (score >= 70) return "text-blue-600";
-    if (score >= 50) return "text-yellow-600";
+    const safeScore = score || 0;
+    if (safeScore >= 90) return "text-green-600";
+    if (safeScore >= 70) return "text-blue-600";
+    if (safeScore >= 50) return "text-yellow-600";
     return "text-red-600";
   };
 
   const getScoreBackground = (score: number) => {
-    if (score >= 90) return "bg-green-500";
-    if (score >= 70) return "bg-blue-500";
-    if (score >= 50) return "bg-yellow-500";
+    const safeScore = score || 0;
+    if (safeScore >= 90) return "bg-green-500";
+    if (safeScore >= 70) return "bg-blue-500";
+    if (safeScore >= 50) return "bg-yellow-500";
     return "bg-red-500";
   };
 
   const getScoreBadge = (score: number) => {
-    if (score >= 90) return { label: t("strongMatch"), variant: "default" as const };
-    if (score >= 70) return { label: t("good"), variant: "secondary" as const };
-    if (score >= 50) return { label: t("fair"), variant: "outline" as const };
+    const safeScore = score || 0;
+    if (safeScore >= 90) return { label: t("strongMatch"), variant: "default" as const };
+    if (safeScore >= 70) return { label: t("good"), variant: "secondary" as const };
+    if (safeScore >= 50) return { label: t("fair"), variant: "outline" as const };
     return { label: t("weak"), variant: "destructive" as const };
   };
 
@@ -204,9 +261,9 @@ export default function Evaluations() {
   const stats = {
     total: filteredEvaluations.length,
     avgScore: filteredEvaluations.length > 0 
-      ? Math.round(filteredEvaluations.reduce((acc, e) => acc + e.fitScore, 0) / filteredEvaluations.length)
+      ? Math.round(filteredEvaluations.reduce((acc, e) => acc + (e.fitScore || 0), 0) / filteredEvaluations.length)
       : 0,
-    excellent: filteredEvaluations.filter(e => e.fitScore >= 90).length,
+    excellent: filteredEvaluations.filter(e => (e.fitScore || 0) >= 90).length,
     recommended: filteredEvaluations.filter(e => e.overallRecommendation?.toLowerCase().includes('recommend')).length
   };
 
@@ -386,6 +443,131 @@ export default function Evaluations() {
             </CardContent>
           </Card>
 
+          {/* Job Selection Dialog */}
+          <Dialog open={isJobSelectionDialogOpen} onOpenChange={setIsJobSelectionDialogOpen}>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Building className="w-5 h-5" />
+                  Select Job Description for Evaluation
+                </DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  Choose a job description to evaluate candidates against. The system will compare each candidate's 
+                  assessment results with the job requirements to calculate fit scores.
+                </p>
+                
+                {jobDescriptions && jobDescriptions.length > 0 ? (
+                  <div className="grid gap-3 max-h-96 overflow-y-auto">
+                    {jobDescriptions
+                      .filter(job => job.isActive !== false)
+                      .map((job) => (
+                        <Card 
+                          key={job.id} 
+                          className={cn(
+                            "cursor-pointer transition-all hover:shadow-md",
+                            selectedJobDescription?.id === job.id 
+                              ? "ring-2 ring-blue-500 bg-blue-50" 
+                              : "hover:bg-gray-50"
+                          )}
+                          onClick={() => setSelectedJobDescription(job)}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-lg">
+                                  {job.title || job.position.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                </h3>
+                                <p className="text-sm text-gray-600 mt-1">
+                                  Position: {job.position.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                </p>
+                                {job.description && (
+                                  <p className="text-sm text-gray-700 mt-2 line-clamp-2">
+                                    {job.description}
+                                  </p>
+                                )}
+                                {job.requirements && (
+                                  <p className="text-xs text-gray-600 mt-2">
+                                    <span className="font-medium">Requirements:</span> {job.requirements.substring(0, 150)}
+                                    {job.requirements.length > 150 && '...'}
+                                  </p>
+                                )}
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {job.skills && job.skills.split(',').slice(0, 3).map((skill, index) => (
+                                    <Badge key={index} variant="secondary" className="text-xs">
+                                      {skill.trim()}
+                                    </Badge>
+                                  ))}
+                                  {job.skills && job.skills.split(',').length > 3 && (
+                                    <Badge variant="outline" className="text-xs">
+                                      +{job.skills.split(',').length - 3} more
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              {selectedJobDescription?.id === job.id && (
+                                <div className="ml-4">
+                                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Job Descriptions Available</h3>
+                    <p className="text-gray-500 mb-4">
+                      You need to create job descriptions before running evaluations.
+                    </p>
+                    <Button 
+                      onClick={() => window.location.href = '/job-descriptions'}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      Create Job Descriptions
+                    </Button>
+                  </div>
+                )}
+                
+                {jobDescriptions && jobDescriptions.length > 0 && (
+                  <div className="flex justify-end gap-3 pt-4 border-t">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsJobSelectionDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={handleJobSelectionAndRunEvaluation}
+                      disabled={!selectedJobDescription || runEvaluationMutation.isPending}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {runEvaluationMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Evaluating...
+                        </>
+                      ) : (
+                        <>
+                          <Target className="w-4 h-4 mr-2" />
+                          Run Evaluation
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+
           {/* Evaluations List */}
           {evaluationsLoading ? (
             <div className="text-center py-8">
@@ -428,7 +610,8 @@ export default function Evaluations() {
               {filteredEvaluations.map((evaluation) => {
                 const candidate = candidates?.find(c => c.id === evaluation.candidateId);
                 const isExpanded = expandedEvaluations.has(evaluation.candidateId);
-                const scoreBadge = getScoreBadge(evaluation.fitScore);
+                const safeScore = evaluation.fitScore || 0;
+                const scoreBadge = getScoreBadge(safeScore);
                 
                 return (
                   <Card key={evaluation.id} className="hover:shadow-md transition-shadow">
@@ -462,14 +645,14 @@ export default function Evaluations() {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-gray-700">{t("overallScore")}</span>
-                            <span className={cn("text-lg font-bold", getScoreColor(evaluation.fitScore))}>
-                              {evaluation.fitScore}%
+                            <span className={cn("text-lg font-bold", getScoreColor(safeScore))}>
+                              {safeScore}%
                             </span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div 
-                              className={cn("h-2 rounded-full transition-all", getScoreBackground(evaluation.fitScore))}
-                              style={{ width: `${evaluation.fitScore}%` }}
+                              className={cn("h-2 rounded-full transition-all", getScoreBackground(safeScore))}
+                              style={{ width: `${safeScore}%` }}
                             />
                           </div>
                         </div>
@@ -478,15 +661,15 @@ export default function Evaluations() {
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs sm:text-sm">
                           <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
                             <span className="text-gray-600">Experience</span>
-                            <span className="font-medium">{evaluation.experienceMatch}%</span>
+                            <span className="font-medium">{evaluation.experienceMatch || 0}%</span>
                           </div>
                           <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
                             <span className="text-gray-600">Education</span>
-                            <span className="font-medium">{evaluation.educationMatch}%</span>
+                            <span className="font-medium">{evaluation.educationMatch || 0}%</span>
                           </div>
                           <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
                             <span className="text-gray-600">Ranking</span>
-                            <span className="font-medium">#{evaluation.ranking}</span>
+                            <span className="font-medium">#{evaluation.ranking || 0}</span>
                           </div>
                         </div>
 

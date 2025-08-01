@@ -69,11 +69,13 @@ export default function Emails() {
 
   const { data: emails, isLoading: emailsLoading } = useQuery<EmailHistory[]>({
     queryKey: ["/api/emails"],
+    queryFn: () => fetch("/api/emails").then(res => res.json()),
     retry: false,
   });
 
   const { data: candidates } = useQuery<Candidate[]>({
     queryKey: ["/api/candidates"],
+    queryFn: () => fetch("/api/candidates").then(res => res.json()),
     retry: false,
   });
 
@@ -85,8 +87,8 @@ export default function Emails() {
   ) || [];
 
   const sendEmailMutation = useMutation({
-    mutationFn: async (emailData: { to: string; subject: string; body: string }) => {
-      const res = await apiRequest("POST", "/api/send-email", emailData);
+    mutationFn: async (emailData: { candidateId: string; subject: string; content: string; recipientEmail: string }) => {
+      const res = await apiRequest("POST", "/api/emails/send", emailData);
       return await res.json();
     },
     onSuccess: () => {
@@ -173,9 +175,10 @@ export default function Emails() {
     }
 
     const emailData = {
-      to: selectedCandidate.email,
+      candidateId: selectedCandidate.id,
       subject: emailForm.subject,
-      body: emailForm.content
+      content: emailForm.content,
+      recipientEmail: selectedCandidate.email
     };
 
     sendEmailMutation.mutate(emailData);
@@ -248,7 +251,7 @@ export default function Emails() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
-                {t("emails")}
+                Email Communications
               </h1>
               <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
                 Send and manage candidate communications

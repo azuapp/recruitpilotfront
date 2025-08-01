@@ -105,12 +105,12 @@ export interface IStorage {
     assessments: number;
   }>;
 
-  // Replit Auth operations (required)
+  // Authentication operations
   upsertUser(userData: any): Promise<User>;
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations (mandatory for Replit Auth)
+  // User management operations
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
@@ -544,7 +544,7 @@ export class DatabaseStorage implements IStorage {
     return this.getDashboardStats();
   }
 
-  // Replit Auth operations (required)
+  // Authentication operations
   async upsertUser(userData: any): Promise<User> {
     const [user] = await db
       .insert(users)
@@ -553,7 +553,7 @@ export class DatabaseStorage implements IStorage {
         email: userData.email,
         firstName: userData.firstName || '',
         lastName: userData.lastName || '',
-        password: '', // Not used in Replit Auth
+        password: userData.password || '', // For standard authentication
         profileImageUrl: userData.profileImageUrl,
       })
       .onConflictDoUpdate({

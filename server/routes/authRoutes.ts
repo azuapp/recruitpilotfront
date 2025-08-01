@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { storage } from '../storage';
-import { asyncHandler, AppError } from '../services/errorHandler';
+import { asyncHandler, AppError, ValidationError } from '../services/errorHandler';
 import { logger } from '../services/logger';
 import { isAuthenticated, isAdmin } from '../auth';
+import { InputSanitizer, commonSchemas } from '../services/security';
 
 const router = Router();
 
@@ -25,10 +26,18 @@ router.post('/login', asyncHandler(async (req, res, next) => {
   const { email, password } = req.body;
   
   if (!email || !password) {
-    throw new AppError('Email and password are required', 400);
+    throw new ValidationError('Email and password are required');
   }
 
-  const user = await storage.getUserByEmail(email);
+  // Validate and sanitize email
+  try {
+    commonSchemas.email.parse(email);
+  } catch (error) {
+    throw new ValidationError('Invalid email format');
+  }
+
+  const sanitizedEmail = InputSanitizer.sanitizeText(email);
+  const user = await storage.getUserByEmail(sanitizedEmail);
   if (!user) {
     throw new AppError('Invalid credentials', 401);
   }

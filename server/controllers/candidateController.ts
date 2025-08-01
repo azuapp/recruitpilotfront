@@ -4,8 +4,9 @@ import { insertCandidateSchema } from '@shared/schema';
 import { extractTextFromPDF } from '../services/pdfExtractor';
 import { sendEmail, getApplicationConfirmationEmail } from '../services/email';
 import { logger } from '../services/logger';
-import { AppError, asyncHandler } from '../services/errorHandler';
+import { AppError, asyncHandler, ValidationError } from '../services/errorHandler';
 import { processAssessment } from '../services/assessmentService';
+import { InputSanitizer } from '../services/security';
 import fs from 'fs';
 import path from 'path';
 
@@ -16,15 +17,24 @@ export const createCandidate = asyncHandler(async (req: Request, res: Response) 
     position: req.body.position 
   });
 
-  const candidateData = insertCandidateSchema.parse({
-    fullName: req.body.fullName,
-    email: req.body.email,
-    phone: req.body.phone,
-    linkedinProfile: req.body.linkedinProfile || null,
-    position: req.body.position,
+  // Validate required fields first
+  if (!req.body.fullName || !req.body.email || !req.body.phone || !req.body.position) {
+    throw new ValidationError('Missing required fields: fullName, email, phone, and position are required');
+  }
+
+  // Sanitize all input fields
+  const sanitizedData = {
+    fullName: InputSanitizer.sanitizeText(req.body.fullName),
+    email: req.body.email, // Email validation will be handled by Zod
+    phone: InputSanitizer.sanitizeText(req.body.phone),
+    linkedinProfile: req.body.linkedinProfile ? InputSanitizer.sanitizeText(req.body.linkedinProfile) : null,
+    position: InputSanitizer.sanitizeText(req.body.position),
     cvFileName: req.file?.originalname,
     cvFilePath: req.file?.path,
-  });
+  };
+
+  // Validate with Zod schema after sanitization
+  const candidateData = insertCandidateSchema.parse(sanitizedData);
 
   // Check for duplicate application (same email + same position)
   logger.info('Checking for duplicate application', { 
@@ -103,13 +113,24 @@ export const createCandidate = asyncHandler(async (req: Request, res: Response) 
 export const getCandidates = asyncHandler(async (req: Request, res: Response) => {
   const { search, position, status, limit, offset } = req.query;
   
-  const candidates = await storage.getCandidates({
-    search: search as string,
-    position: position as string,
-    status: status as string,
+  // Check for SQL injection patterns in search parameter
+  if (search && typeof search === 'string') {
+    const sqlPatterns = /('|"|;|--|\\bOR\\b|\\bAND\\b|\\bUNION\\b|\\bSELECT\\b|\\bINSERT\\b|\\bDELETE\\b|\\bUPDATE\\b|\\bDROP\\b)/i;
+    if (sqlPatterns.test(search)) {
+      throw new ValidationError('Invalid search parameter: potential SQL injection detected');
+    }
+  }
+  
+  // Sanitize search parameters to prevent SQL injection
+  const sanitizedParams = {
+    search: search ? InputSanitizer.sanitizeSqlInput(search as string) : undefined,
+    position: position ? InputSanitizer.sanitizeText(position as string) : undefined,
+    status: status ? InputSanitizer.sanitizeText(status as string) : undefined,
     limit: limit ? parseInt(limit as string) : undefined,
     offset: offset ? parseInt(offset as string) : undefined,
-  });
+  };
+  
+  const candidates = await storage.getCandidates(sanitizedParams);
 
   logger.debug('Retrieved candidates', { count: candidates.length });
   res.json(candidates);

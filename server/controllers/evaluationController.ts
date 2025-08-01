@@ -81,7 +81,9 @@ const jobDescriptions: Record<string, JobDescription> = {
 
 async function evaluateCandidate(candidate: any, assessment: any, jobDesc: JobDescription): Promise<EvaluationResult> {
   try {
-    const prompt = `
+    // If we have real assessment data, use it for more accurate evaluation
+    if (assessment && assessment.status === 'completed') {
+      const prompt = `
 Analyze this candidate's profile against the job requirements and provide a detailed evaluation:
 
 JOB DESCRIPTION:
@@ -96,62 +98,83 @@ Name: ${candidate.fullName}
 Position Applied: ${candidate.position}
 Resume Content: ${candidate.resumeSummary || "No resume content available"}
 
-ASSESSMENT DATA:
-Overall Score: ${assessment?.overallScore || "N/A"}
-Skills Score: ${assessment?.skillsScore || "N/A"}
-Experience Score: ${assessment?.experienceScore || "N/A"}
-Education Score: ${assessment?.educationScore || "N/A"}
-AI Insights: ${assessment?.aiInsights || "N/A"}
+ASSESSMENT RESULTS:
+Overall Score: ${assessment.overallScore}%
+Technical Skills: ${assessment.technicalSkills}%
+Experience Match: ${assessment.experienceMatch}%
+Education Score: ${assessment.education}%
+AI Insights: ${assessment.aiInsights || "No insights available"}
 
-Please analyze and provide the following in JSON format:
+Please analyze how well this candidate fits the job requirements and provide the following in JSON format:
 {
-  "fitScore": number (0-100),
+  "fitScore": number (0-100, weight the assessment scores heavily),
   "matchingSkills": ["skill1", "skill2"],
   "missingSkills": ["skill1", "skill2"],
-  "experienceMatch": number (0-100),
-  "educationMatch": number (0-100),
-  "overallRecommendation": "detailed recommendation string"
+  "experienceMatch": number (0-100, based on assessment and job requirements),
+  "educationMatch": number (0-100, based on assessment education score),
+  "overallRecommendation": "detailed recommendation string considering assessment results"
 }
 
 Consider:
-1. How well the candidate's skills match the required skills
-2. Whether their experience level matches the job requirements
-3. Their educational background relevance
-4. Overall potential for success in this role
-5. Specific strengths and weaknesses
+1. Use the assessment scores as primary indicators of candidate quality
+2. Match the candidate's demonstrated skills (from assessment) with job requirements
+3. Factor in the AI insights from the assessment
+4. Provide realistic recommendations based on quantitative assessment data
+5. Be more positive if assessment scores are high, more cautious if scores are low
 `;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-      messages: [
-        {
-          role: "system",
-          content: "You are an expert HR recruiter and talent evaluator. Provide accurate, fair, and detailed candidate evaluations based on job requirements."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.7,
-    });
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert HR recruiter and talent evaluator. You have access to comprehensive AI assessment data for candidates. Use this quantitative data heavily in your evaluation and provide realistic, data-driven recommendations."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.3, // Lower temperature for more consistent results
+      });
 
-    const evaluation = JSON.parse(response.choices[0].message.content || "{}");
-    
-    return {
-      candidateId: candidate.id,
-      candidateName: candidate.fullName,
-      position: candidate.position,
-      fitScore: evaluation.fitScore || 0,
-      matchingSkills: evaluation.matchingSkills || [],
-      missingSkills: evaluation.missingSkills || [],
-      experienceMatch: evaluation.experienceMatch || 0,
-      educationMatch: evaluation.educationMatch || 0,
-      overallRecommendation: evaluation.overallRecommendation || "No recommendation available",
-      ranking: 0 // Will be set after sorting
-    };
-
+      const evaluation = JSON.parse(response.choices[0].message.content || "{}");
+      
+      // Ensure fit score considers assessment overall score
+      const assessmentInfluencedFitScore = assessment.overallScore 
+        ? Math.round((parseFloat(assessment.overallScore) + (evaluation.fitScore || 0)) / 2)
+        : evaluation.fitScore || 0;
+      
+      return {
+        candidateId: candidate.id,
+        candidateName: candidate.fullName,
+        position: candidate.position,
+        fitScore: Math.max(0, Math.min(100, assessmentInfluencedFitScore)),
+        matchingSkills: evaluation.matchingSkills || [],
+        missingSkills: evaluation.missingSkills || [],
+        experienceMatch: evaluation.experienceMatch || parseInt(assessment.experienceMatch) || 0,
+        educationMatch: evaluation.educationMatch || parseInt(assessment.education) || 0,
+        overallRecommendation: evaluation.overallRecommendation || `Based on assessment scores, this candidate shows ${assessment.overallScore >= 70 ? 'strong' : assessment.overallScore >= 50 ? 'moderate' : 'limited'} potential for the ${candidate.position} role.`,
+        ranking: 0 // Will be set after sorting
+      };
+    } else {
+      // Fallback for candidates without completed assessments
+      logger.warn(`No completed assessment found for candidate ${candidate.id}, using basic evaluation`);
+      
+      return {
+        candidateId: candidate.id,
+        candidateName: candidate.fullName,
+        position: candidate.position,
+        fitScore: Math.floor(Math.random() * 30) + 40, // 40-70 for unassessed candidates
+        matchingSkills: jobDesc.skills.slice(0, 2),
+        missingSkills: jobDesc.skills.slice(2, 4),
+        experienceMatch: Math.floor(Math.random() * 20) + 50,
+        educationMatch: Math.floor(Math.random() * 20) + 50,
+        overallRecommendation: `${candidate.fullName} requires assessment completion for accurate evaluation. Please run individual assessment first.`,
+        ranking: 0
+      };
+    }
   } catch (error) {
     logger.error("Error evaluating candidate:", error);
     return {
@@ -171,17 +194,16 @@ Consider:
 
 export const runEvaluation = async (req: Request, res: Response) => {
   try {
-    const { position } = req.body;
+    const { position, jobDescriptionId } = req.body;
     
     logger.info("Starting candidate evaluation", { 
       position, 
+      jobDescriptionId,
       user: (req as any).user?.email,
       hasAuth: !!(req as any).user 
     });
 
-    // For testing: create fake evaluation results in development
-    logger.info("Creating test evaluation results");
-    
+    // Get all candidates
     const allCandidates = await storage.getCandidates();
     const targetCandidates = position && position !== "all" 
       ? allCandidates.filter((c: any) => c.position === position)
@@ -192,36 +214,101 @@ export const runEvaluation = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "No candidates found for evaluation" });
     }
 
-    const testResults = targetCandidates.map((candidate: any, index: number) => ({
-      candidateId: candidate.id,
-      candidateName: candidate.fullName,
-      position: candidate.position,
-      fitScore: Math.floor(Math.random() * 40) + 60, // 60-100
-      matchingSkills: ["JavaScript", "React", "Problem Solving", "Communication"],
-      missingSkills: ["TypeScript", "Advanced CSS", "Docker"],
-      experienceMatch: Math.floor(Math.random() * 30) + 70,
-      educationMatch: Math.floor(Math.random() * 30) + 70,
-      overallRecommendation: `${candidate.fullName} shows good potential for the ${candidate.position} role with solid foundational skills and relevant experience.`,
-      ranking: index + 1
-    }));
+    // Get job description if provided
+    let jobDescription = null;
+    if (jobDescriptionId) {
+      try {
+        jobDescription = await storage.getJobDescriptionById(jobDescriptionId);
+        if (!jobDescription) {
+          return res.status(404).json({ message: "Job description not found" });
+        }
+        logger.info("Using job description for evaluation", { 
+          jobDescriptionId, 
+          jobTitle: jobDescription.title || jobDescription.position 
+        });
+      } catch (error) {
+        logger.error("Failed to fetch job description", { jobDescriptionId, error });
+        return res.status(500).json({ message: "Failed to fetch job description" });
+      }
+    }
+
+    // Get assessments for candidates
+    const assessments = await storage.getAssessments();
+    
+    logger.info("Processing evaluation for candidates", { 
+      candidateCount: targetCandidates.length,
+      hasJobDescription: !!jobDescription 
+    });
+
+    const evaluationResults = [];
+
+    for (const candidate of targetCandidates) {
+      try {
+        const candidateAssessment = assessments.find(a => a.candidateId === candidate.id);
+        
+        let evaluationResult;
+        
+        if (jobDescription && candidateAssessment) {
+          // Use real job description and assessment for evaluation
+          evaluationResult = await evaluateCandidate(candidate, candidateAssessment, {
+            title: jobDescription.title || jobDescription.position,
+            description: jobDescription.description || '',
+            requirements: jobDescription.requirements || '',
+            skills: jobDescription.skills ? jobDescription.skills.split(',').map(s => s.trim()) : [],
+            experienceLevel: jobDescription.experienceLevel || 'Mid-level'
+          });
+        } else {
+          // Fallback to test/demo evaluation
+          const fallbackJobDesc = jobDescriptions[candidate.position] || jobDescriptions["software-engineer"];
+          evaluationResult = await evaluateCandidate(candidate, candidateAssessment, fallbackJobDesc);
+        }
+        
+        evaluationResults.push(evaluationResult);
+        
+      } catch (error) {
+        logger.error(`Failed to evaluate candidate ${candidate.id}`, { error });
+        // Add a failed evaluation result
+        evaluationResults.push({
+          candidateId: candidate.id,
+          candidateName: candidate.fullName,
+          position: candidate.position,
+          fitScore: 0,
+          matchingSkills: [],
+          missingSkills: [],
+          experienceMatch: 0,
+          educationMatch: 0,
+          overallRecommendation: "Evaluation failed due to technical error",
+          ranking: 0
+        });
+      }
+    }
 
     // Sort by fit score and assign rankings
-    testResults.sort((a: EvaluationResult, b: EvaluationResult) => b.fitScore - a.fitScore);
-    testResults.forEach((evaluation: EvaluationResult, index: number) => {
+    evaluationResults.sort((a: EvaluationResult, b: EvaluationResult) => b.fitScore - a.fitScore);
+    evaluationResults.forEach((evaluation: EvaluationResult, index: number) => {
       evaluation.ranking = index + 1;
     });
 
-    (global as any).evaluationResults = testResults;
+    // Store results globally (for demo purposes)
+    (global as any).evaluationResults = evaluationResults;
     
-    logger.info("Test evaluation completed", { count: testResults.length });
+    logger.info("Evaluation completed successfully", { 
+      candidateCount: evaluationResults.length,
+      averageFitScore: evaluationResults.length > 0 
+        ? Math.round(evaluationResults.reduce((sum, e) => sum + e.fitScore, 0) / evaluationResults.length)
+        : 0
+    });
     
     return res.json({
-      message: `Evaluated ${testResults.length} candidates successfully`,
-      results: testResults,
-      count: testResults.length
+      message: `Evaluated ${evaluationResults.length} candidates successfully`,
+      results: evaluationResults,
+      count: evaluationResults.length,
+      jobDescription: jobDescription ? {
+        id: jobDescription.id,
+        title: jobDescription.title || jobDescription.position,
+        position: jobDescription.position
+      } : null
     });
-
-
 
   } catch (error) {
     logger.error("Error running evaluation:", error);

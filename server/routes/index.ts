@@ -7,7 +7,6 @@ import assessmentRoutes from './assessmentRoutes';
 import interviewRoutes from './interviewRoutes';
 import emailRoutes from './emailRoutes';
 import jobRoutes from './jobRoutes';
-import testRoutes from './testRoutes';
 import evaluationRoutes from './evaluationRoutes';
 import { setupAuth } from '../auth';
 import { logger } from '../services/logger';
@@ -20,12 +19,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register route modules
   app.use('/api', authRoutes);
   app.use('/api', candidateRoutes);
-  app.use('/api', dashboardRoutes);
+  app.use('/api/dashboard', dashboardRoutes);
   app.use('/api', assessmentRoutes);
   app.use('/api', interviewRoutes);
   app.use('/api', emailRoutes);
   app.use('/api', jobRoutes);
-  app.use('/api', testRoutes);
   app.use('/api', evaluationRoutes);
 
   // Legacy email endpoint for backward compatibility
@@ -59,6 +57,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       method: req.method 
     });
     handleError(error, res);
+  });
+
+  // 404 handler for API routes - must come before catch-all
+  app.use('/api/*', (req, res) => {
+    res.status(404).json({ 
+      message: 'API endpoint not found',
+      path: req.path,
+      method: req.method 
+    });
+  });
+
+  // 405 handler for unsupported methods on existing API routes
+  app.use('/api', (req, res) => {
+    res.status(405).json({ 
+      message: 'Method not allowed',
+      method: req.method,
+      allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
+    });
   });
 
   logger.info('All routes registered successfully');

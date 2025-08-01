@@ -9,6 +9,7 @@ import Sidebar from "@/components/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -71,11 +72,35 @@ export default function Assessments() {
 
   const { data: assessments, isLoading: assessmentsLoading } = useQuery<Assessment[]>({
     queryKey: ["/api/assessments"],
+    queryFn: async () => {
+      const response = await fetch("/api/assessments", {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch assessments');
+      }
+      return response.json();
+    },
     retry: false,
   });
 
-  const { data: candidates } = useQuery<Candidate[]>({
+  const { data: candidates, error: candidatesError, isLoading: candidatesLoading } = useQuery<Candidate[]>({
     queryKey: ["/api/candidates"],
+    queryFn: async () => {
+      const response = await fetch("/api/candidates", {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch candidates: ${response.status}`);
+      }
+      return response.json();
+    },
     retry: false,
   });
 
@@ -226,7 +251,7 @@ export default function Assessments() {
   };
 
   const handlePositionAssessment = () => {
-    if (selectedPosition === "all") {
+    if (selectedPosition === "all" || !selectedPosition) {
       toast({
         title: t("selectPosition"),
         description: t("pleaseSelectPosition"),
@@ -317,10 +342,14 @@ export default function Assessments() {
     ? Array.from(new Set(candidates.map(c => c.position))).filter(Boolean)
     : [];
 
-  // Get candidates without assessments for individual assessment
-  const candidatesWithoutAssessment = candidates?.filter(candidate => 
-    !assessments?.some(assessment => assessment.candidateId === candidate.id)
-  ) || [];
+  // Get all candidates for individual assessment (allow reassessment)
+  const candidatesForAssessment = candidates || [];
+
+  // Convert candidates to combobox options
+  const candidateOptions: ComboboxOption[] = candidatesForAssessment.map(candidate => ({
+    value: candidate.id,
+    label: `${candidate.fullName} - ${candidate.position?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'No Position'}`
+  }));
 
   if (isLoading) {
     return (
@@ -340,21 +369,22 @@ export default function Assessments() {
       )}>
         <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
-                {t("assessments")}
-              </h1>
-              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-                {t("aiPoweredCandidateAssessments")}
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              {/* Bulk Assessment */}
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
+                  {t("assessments")}
+                </h1>
+                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
+                  {t("aiPoweredCandidateAssessments")}
+                </p>
+              </div>
+              
+              {/* Bulk Assessment - Always visible */}
               <Button
                 onClick={handleBulkAssessment}
                 disabled={bulkAssessmentMutation.isPending}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
               >
                 {bulkAssessmentMutation.isPending ? (
                   <>
@@ -368,11 +398,14 @@ export default function Assessments() {
                   </>
                 )}
               </Button>
+            </div>
 
+            {/* Assessment Controls - Responsive Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Position Assessment */}
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Select value={selectedPosition} onValueChange={setSelectedPosition}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-full sm:w-48">
                     <SelectValue placeholder={t("selectPosition")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -386,8 +419,8 @@ export default function Assessments() {
                 </Select>
                 <Button
                   onClick={handlePositionAssessment}
-                  disabled={positionAssessmentMutation.isPending || selectedPosition === "all"}
-                  className="bg-green-600 hover:bg-green-700"
+                  disabled={positionAssessmentMutation.isPending || selectedPosition === "all" || !selectedPosition}
+                  className="bg-green-600 hover:bg-green-700 w-full sm:w-auto whitespace-nowrap"
                 >
                   {positionAssessmentMutation.isPending ? (
                     <>
@@ -404,23 +437,22 @@ export default function Assessments() {
               </div>
 
               {/* Individual Candidate Assessment */}
-              <div className="flex gap-2">
-                <Select value={selectedCandidateId} onValueChange={setSelectedCandidateId}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder={t("selectCandidate")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {candidatesWithoutAssessment.map(candidate => (
-                      <SelectItem key={candidate.id} value={candidate.id}>
-                        {candidate.fullName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="w-full sm:w-48">
+                  <Combobox
+                    options={candidateOptions}
+                    value={selectedCandidateId}
+                    onValueChange={setSelectedCandidateId}
+                    placeholder={t("selectCandidate")}
+                    searchPlaceholder="Search candidates..."
+                    emptyText="No candidates found"
+                    disabled={candidateAssessmentMutation.isPending}
+                  />
+                </div>
                 <Button
                   onClick={handleCandidateAssessment}
-                  disabled={candidateAssessmentMutation.isPending || !selectedCandidateId}
-                  className="bg-purple-600 hover:bg-purple-700"
+                  disabled={candidateAssessmentMutation.isPending || !selectedCandidateId || candidateOptions.length === 0}
+                  className="bg-purple-600 hover:bg-purple-700 w-full sm:w-auto whitespace-nowrap"
                 >
                   {candidateAssessmentMutation.isPending ? (
                     <>
@@ -597,18 +629,24 @@ export default function Assessments() {
                         </div>
 
                         {/* Assessment Details */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs sm:text-sm">
-                          <div className="flex items-center space-x-2">
-                            <Target className="w-3 h-3 text-gray-500" />
-                            <span className="text-gray-600">{t("skills")}: {assessment.technicalSkills}</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs sm:text-sm">
+                          <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                            <Target className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
+                            <span className="text-gray-600 truncate">
+                              <span className="font-medium">{t("skills")}:</span> {assessment.technicalSkills}
+                            </span>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <TrendingUp className="w-3 h-3 text-gray-500" />
-                            <span className="text-gray-600">{t("experience")}: {assessment.experienceMatch}</span>
+                          <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                            <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
+                            <span className="text-gray-600 truncate">
+                              <span className="font-medium">{t("experience")}:</span> {assessment.experienceMatch}
+                            </span>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <Star className="w-3 h-3 text-gray-500" />
-                            <span className="text-gray-600">{t("education")}: {assessment.education}</span>
+                          <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded sm:col-span-2 lg:col-span-1">
+                            <Star className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
+                            <span className="text-gray-600 truncate">
+                              <span className="font-medium">{t("education")}:</span> {assessment.education}
+                            </span>
                           </div>
                         </div>
 
@@ -616,12 +654,12 @@ export default function Assessments() {
                         {assessment.aiInsights && (
                           <div className="border-t border-gray-100 pt-3">
                             <div className="flex items-center space-x-2 mb-2">
-                              <Lightbulb className="w-4 h-4 text-blue-500" />
+                              <Lightbulb className="w-4 h-4 text-blue-500 flex-shrink-0" />
                               <span className="text-sm font-medium text-gray-700">{t("aiInsights")}</span>
                             </div>
                             <div className={cn(
-                              "text-xs sm:text-sm text-gray-600 bg-blue-50 p-2 rounded",
-                              !isExpanded && "line-clamp-2"
+                              "text-xs sm:text-sm text-gray-600 bg-blue-50 p-3 rounded-md leading-relaxed",
+                              !isExpanded && "line-clamp-3"
                             )}>
                               {assessment.aiInsights}
                             </div>
@@ -630,7 +668,7 @@ export default function Assessments() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => toggleAssessmentExpansion(assessment.id)}
-                                className="mt-2 h-6 text-xs text-blue-600 hover:text-blue-700 p-0"
+                                className="mt-2 h-8 text-xs text-blue-600 hover:text-blue-700 px-2 py-1"
                               >
                                 {isExpanded ? 'Show less' : 'Show more'}
                               </Button>
@@ -640,8 +678,8 @@ export default function Assessments() {
 
                         {/* Processed Date */}
                         {assessment.processedAt && (
-                          <div className="flex items-center space-x-2 text-xs text-gray-500">
-                            <Calendar className="w-3 h-3" />
+                          <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-500 bg-gray-50 p-2 rounded">
+                            <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                             <span>Processed: {new Date(assessment.processedAt).toLocaleDateString()}</span>
                           </div>
                         )}
@@ -652,15 +690,15 @@ export default function Assessments() {
                             variant="outline" 
                             size="sm"
                             onClick={() => handleDeleteAssessment(assessment)}
-                            className="flex items-center space-x-1 text-xs px-3 py-2 h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="flex items-center space-x-2 text-xs sm:text-sm px-3 py-2 h-8 sm:h-9 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
                             disabled={deletingAssessmentId === assessment.id}
                           >
                             {deletingAssessmentId === assessment.id ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
+                              <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
                             ) : (
-                              <Trash2 className="w-3 h-3" />
+                              <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                             )}
-                            <span>Delete</span>
+                            <span className="hidden sm:inline">Delete</span>
                           </Button>
                         </div>
                       </div>
